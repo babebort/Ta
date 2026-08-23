@@ -85,6 +85,23 @@ final class CaptureCoordinator {
         )
     }
 
+    func openCaptureToolbarSmokeFixture(completion: @escaping () -> Void) {
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
+            completion()
+            return
+        }
+        let size = screen.frame.size
+        let selection = CGRect(
+            x: size.width * 0.18,
+            y: size.height * 0.34,
+            width: size.width * 0.64,
+            height: size.height * 0.42
+        )
+        selectionOverlay.begin(showsActionToolbar: true, presetRect: selection) { _, _ in
+            completion()
+        }
+    }
+
     private func makeSmokeFixtureImage() -> CGImage? {
         guard let representation = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: 1000, pixelsHigh: 620,
@@ -95,10 +112,10 @@ final class CaptureCoordinator {
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: representation)
         NSColor.white.setFill()
         NSRect(x: 0, y: 0, width: 1000, height: 620).fill()
-        "Tuo UI Smoke Test".draw(at: CGPoint(x: 60, y: 470), withAttributes: [
+        "Ta · 标注案例".draw(at: CGPoint(x: 60, y: 470), withAttributes: [
             .font: NSFont.systemFont(ofSize: 46, weight: .bold), .foregroundColor: NSColor.black
         ])
-        "裁剪 · 编号 · 高亮 · 选择编辑 · 局部放大".draw(at: CGPoint(x: 60, y: 390), withAttributes: [
+        "箭头 · 文字 · 高亮 · 马赛克 · 自由缩放".draw(at: CGPoint(x: 60, y: 390), withAttributes: [
             .font: NSFont.systemFont(ofSize: 28), .foregroundColor: NSColor.darkGray
         ])
         NSColor.systemBlue.withAlphaComponent(0.16).setFill()

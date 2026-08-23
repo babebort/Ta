@@ -11,7 +11,9 @@
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#当前状态)
 
-**AI 原生截图工具：截图、取字、翻译、长截图、钉图与标注，一步完成。**
+**AI 原生截图工具：截图、取字、AI 识图、翻译、长截图、钉图与标注，一步完成。**
+
+目前暂时仅支持 **macOS**；Windows 版本正在努力制作中。
 
 [简体中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md)
 
@@ -56,6 +58,37 @@ AI 原生，不是给传统截图软件外挂一个聊天框，而是让 AI 从�
 - **OCR 方案难以取舍**——Apple Vision、PaddleOCR 与远程视觉模型可以按速度、结构和隐私要求切换。
 - **截图标注效率低**——提供接近 Snipaste 的原位标注、对象移动缩放、马赛克涂抹和钉图体验。
 - **云端识图缺少边界**——默认本地处理；需要上传时明确提示，并把 API Key 保存在 macOS Keychain。
+
+## 经典用法
+
+下面的图片均来自 Ta 当前版本的实际运行界面。
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>框选一次，选择下一步</strong><br><br>
+      <img src="./docs/showcase/02-capture-toolbar.png" alt="Ta 通用截图操作栏">
+      <br>截图后直接取字、AI 识图、翻译、复制、钉图、标注、美化或保存。
+    </td>
+    <td width="50%" valign="top">
+      <strong>配置自己的 AI 模型</strong><br><br>
+      <img src="./docs/showcase/05-ai-model-settings.png" alt="Ta AI 模型设置">
+      <br>支持多种 Provider 协议，API Key 只保存在 macOS Keychain。
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>原位标注</strong><br><br>
+      <img src="./docs/showcase/03-annotation-tools.png" alt="Ta 原位标注工具栏">
+      <br>箭头、文字、高亮、两种马赛克和对象直接缩放，都在截图原位置完成。
+    </td>
+    <td width="50%" valign="top">
+      <strong>把参考内容钉在眼前</strong><br><br>
+      <img src="./docs/showcase/04-pin-image.png" alt="Ta 钉图案例">
+      <br>钉图保持置顶，可移动、缩放、调整透明度，也可双击关闭。
+    </td>
+  </tr>
+</table>
 
 ## 它是怎么工作的
 
@@ -104,6 +137,12 @@ ScreenCaptureKit 捕获（排除 Ta 自身窗口）
 - 直接截图翻译后把译文复制到剪贴板。
 - 截图工具栏支持纯文字、原图文字替换与原图下方双语对照。
 - 图片文字定位和结果合成在本地完成，只把需要翻译的文字发送给配置的模型。
+
+### AI 美化（开发中）
+
+- 面向公众号、社交媒体和产品文档，自动补齐留白、圆角、阴影、背景与常用版式。
+- 计划支持智能标注、隐私信息遮挡、多尺寸导出，以及根据截图内容生成匹配的背景或装饰元素。
+- 当前版本已经预留“美化”入口，完整的 AI 美化工作流仍在开发中，不会把尚未完成的能力标为可用。
 
 ### 滚动长截图
 
@@ -209,6 +248,20 @@ Ta 目前处于 **Alpha** 阶段，核心链路已经可运行，但还不是经
 - [长截图验收矩阵](./docs/long-capture-acceptance-matrix.md)
 - [PaddleOCR 增强包规范](./docs/ocr-enhancement-pack-spec.md)
 
+## 展望：让截图成为 Agent 的眼睛
+
+Ta 不只想成为一个更全的截图工具。未来，我们希望逐步融入更多 **Agent 能力**，让截图从一张静态图片，变成 AI 理解屏幕和执行任务的入口。
+
+例如，Agent 可以在你确认后：
+
+- 识别截图中的任务、日期、链接和表格，并整理成待办、笔记或结构化数据；
+- 理解界面状态，给出下一步操作建议，或串联翻译、标注、美化和导出流程；
+- 自动发现并遮挡手机号、邮箱、头像等敏感信息；
+- 把长对话、代码报错、产品页面或研究材料转成可继续编辑的工作成果；
+- 记住你常用的截图处理方式，把重复操作变成可复用的个人工作流。
+
+Agent 能力仍会坚持明确授权、过程可见、结果可撤销。Ta 希望做的不是替你接管屏幕，而是让你更快地把屏幕上的信息带走、读懂，并继续使用。
+
 ## Roadmap
 
 - [x] 原生截图、OCR、复制与自定义快捷键
@@ -218,7 +271,10 @@ Ta 目前处于 **Alpha** 阶段，核心链路已经可运行，但还不是经
 - [x] PaddleOCR 可选离线增强包协议
 - [ ] 多显示器跨屏框选与窗口吸附
 - [ ] 公众号截图模板与参数化美化
+- [ ] AI 美化、智能隐私遮挡与多尺寸生成
 - [ ] 历史记录、搜索与结果重新复制
+- [ ] 可确认、可撤销的截图 Agent 工作流
+- [ ] Windows 版本
 - [ ] Developer ID 签名、公证与公开安装包
 
 ## 免费、开源，也希望和大家一起做

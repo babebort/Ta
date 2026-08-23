@@ -52,6 +52,16 @@ final class AppModel: ObservableObject {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("--capture-fixed") {
             scheduleFixedCapture()
+        } else if arguments.contains("--ui-smoke-capture-toolbar") {
+            Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(180))
+                guard let self else { return }
+                showWelcome()
+                try? await Task.sleep(for: .milliseconds(220))
+                captureCoordinator.openCaptureToolbarSmokeFixture { [weak self] in
+                    self?.statusText = "本地识别就绪"
+                }
+            }
         } else if arguments.contains("--ui-smoke-editor") {
             Task { [weak self] in
                 try? await Task.sleep(for: .milliseconds(180))

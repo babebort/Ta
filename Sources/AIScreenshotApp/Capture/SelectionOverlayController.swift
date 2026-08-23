@@ -16,6 +16,7 @@ final class SelectionOverlayController {
 
     func begin(
         showsActionToolbar: Bool,
+        presetRect: CGRect? = nil,
         completion: @escaping (CaptureSelection?, CaptureQuickAction?) -> Void
     ) {
         guard panel == nil else { return }
@@ -60,6 +61,10 @@ final class SelectionOverlayController {
         }
         panel.contentView = overlay
         self.panel = panel
+
+        if let presetRect {
+            overlay.showPresetSelection(presetRect.intersection(overlay.bounds))
+        }
 
         NSApplication.shared.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)

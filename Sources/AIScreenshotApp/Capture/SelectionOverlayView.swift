@@ -8,11 +8,23 @@ final class SelectionOverlayView: NSView {
     private var dragStart: CGPoint?
     private var selectionRect: CGRect?
     private var actionToolbar: NSVisualEffectView?
+    private var showsPresetFixture = false
 
     override var acceptsFirstResponder: Bool { true }
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .crosshair)
+    }
+
+    func showPresetSelection(_ rect: CGRect) {
+        guard rect.width >= 4, rect.height >= 4 else { return }
+        showsPresetFixture = true
+        selectionRect = rect.integral
+        dragStart = nil
+        needsDisplay = true
+        if showsActionToolbar {
+            showActionToolbar(for: rect.integral)
+        }
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -90,10 +102,16 @@ final class SelectionOverlayView: NSView {
             return
         }
 
-        context.saveGState()
-        context.setBlendMode(.clear)
-        context.fill(selectionRect)
-        context.restoreGState()
+        if showsPresetFixture {
+            context.setFillColor(NSColor.white.cgColor)
+            context.fill(selectionRect)
+            drawPresetFixture(in: selectionRect)
+        } else {
+            context.saveGState()
+            context.setBlendMode(.clear)
+            context.fill(selectionRect)
+            context.restoreGState()
+        }
 
         context.setStrokeColor(NSColor.controlAccentColor.cgColor)
         context.setLineWidth(2)
@@ -191,5 +209,31 @@ final class SelectionOverlayView: NSView {
         let size = text.size(withAttributes: attributes)
         let origin = CGPoint(x: point.x - size.width / 2, y: point.y - size.height / 2)
         text.draw(at: origin, withAttributes: attributes)
+    }
+
+    private func drawPresetFixture(in rect: CGRect) {
+        let title = "Ta · 一次截图，多种下一步"
+        title.draw(at: CGPoint(x: rect.minX + 42, y: rect.maxY - 82), withAttributes: [
+            .font: NSFont.systemFont(ofSize: 30, weight: .bold),
+            .foregroundColor: NSColor.labelColor
+        ])
+        "取字 · AI 识图 · 翻译 · 钉图 · 标注 · 美化".draw(
+            at: CGPoint(x: rect.minX + 42, y: rect.maxY - 130),
+            withAttributes: [
+                .font: NSFont.systemFont(ofSize: 18, weight: .medium),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+        )
+        NSColor(calibratedRed: 0.91, green: 0.25, blue: 0.18, alpha: 0.10).setFill()
+        NSBezierPath(
+            roundedRect: CGRect(
+                x: rect.minX + 42,
+                y: rect.minY + 48,
+                width: rect.width - 84,
+                height: max(58, rect.height - 220)
+            ),
+            xRadius: 18,
+            yRadius: 18
+        ).fill()
     }
 }

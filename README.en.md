@@ -11,7 +11,9 @@
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#project-status)
 
-**An AI-native screenshot tool for macOS: capture, OCR, translate, stitch, pin, and annotate in one flow.**
+**An AI-native screenshot tool: capture, OCR, understand images, translate, stitch, pin, and annotate in one flow.**
+
+Ta currently supports **macOS** only; a Windows version is in development.
 
 [简体中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md)
 
@@ -56,6 +58,37 @@ AI-native does not mean attaching a chat box to a traditional screenshot app. It
 - **One OCR engine does not fit every task** — switch among Apple Vision, PaddleOCR, and remote vision services based on speed, structure, and privacy.
 - **Slow annotation workflows** — in-place annotation, direct object manipulation, brush mosaic, and floating image pins inspired by Snipaste.
 - **Unclear cloud boundaries** — local processing by default, explicit upload notices, and API keys stored in macOS Keychain.
+
+## Classic workflows
+
+Every image below was captured from the current working version of Ta.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Capture once, choose what happens next</strong><br><br>
+      <img src="./docs/showcase/02-capture-toolbar.png" alt="Ta universal capture toolbar">
+      <br>Extract text, use AI vision, translate, copy, pin, annotate, beautify, or save without leaving the capture flow.
+    </td>
+    <td width="50%" valign="top">
+      <strong>Bring your own AI model</strong><br><br>
+      <img src="./docs/showcase/05-ai-model-settings.png" alt="Ta AI model settings">
+      <br>Choose from multiple provider protocols while keeping API keys in macOS Keychain.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Annotate in place</strong><br><br>
+      <img src="./docs/showcase/03-annotation-tools.png" alt="Ta in-place annotation toolbar">
+      <br>Add arrows, text, highlights, two kinds of mosaic, and resize objects directly over the original capture.
+    </td>
+    <td width="50%" valign="top">
+      <strong>Keep references in view</strong><br><br>
+      <img src="./docs/showcase/04-pin-image.png" alt="Ta pinned image example">
+      <br>Pins stay on top and can be moved, resized, faded, or dismissed with a double-click.
+    </td>
+  </tr>
+</table>
 
 ## How it works
 
@@ -104,6 +137,12 @@ If the clipboard changes while recognition is running, Ta will not overwrite the
 - Translate a capture and copy the result directly to the clipboard.
 - Return plain text, replace text inside the image, or append a bilingual panel below the original.
 - Text localization and final image composition happen locally; only text that needs translation is sent to the configured model.
+
+### AI beautification (in development)
+
+- Automatically add whitespace, rounded corners, shadows, backgrounds, and publishing layouts for social posts and product documentation.
+- Planned capabilities include smart callouts, sensitive-data redaction, multi-size export, and generated backgrounds or decorative elements that match the capture.
+- The current release includes a reserved Beautify entry point. The full AI beautification workflow is still in development and is not presented as finished functionality.
 
 ### Scrolling capture
 
@@ -200,6 +239,20 @@ Known limitations:
 - [Scrolling capture acceptance matrix](./docs/long-capture-acceptance-matrix.md)
 - [PaddleOCR add-on specification](./docs/ocr-enhancement-pack-spec.md)
 
+## Vision: screenshots as an Agent's eyes
+
+Ta aims to become more than a feature-complete screenshot utility. Over time, we want to add more **Agent capabilities**, turning a static image into an entry point for understanding the screen and completing useful work.
+
+With explicit confirmation, an Agent could:
+
+- recognize tasks, dates, links, and tables, then turn them into notes, todos, or structured data;
+- understand interface state and suggest the next step, or connect translation, annotation, beautification, and export into one workflow;
+- detect and redact phone numbers, email addresses, avatars, and other sensitive information;
+- turn long conversations, code errors, product pages, and research material into editable output;
+- learn your preferred capture actions and package repetitive steps into reusable personal workflows.
+
+Agent features will remain permission-based, visible, and reversible. Ta should help you take information off the screen, understand it, and keep working with it—not take control of your screen away from you.
+
 ## Roadmap
 
 - [x] Native capture, OCR, clipboard output, and custom shortcuts
@@ -209,7 +262,10 @@ Known limitations:
 - [x] Optional offline PaddleOCR pack protocol
 - [ ] Cross-display region selection and window snapping
 - [ ] Publishing templates and parameterized screenshot styling
+- [ ] AI beautification, smart privacy redaction, and multi-size generation
 - [ ] History, search, and result re-copy
+- [ ] Confirmable and reversible screenshot Agent workflows
+- [ ] Windows version
 - [ ] Developer ID signing, notarization, and public installer
 
 ## Free, open source, and built together
