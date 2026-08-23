@@ -1,0 +1,35 @@
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+.env
+.env.*
+!.env.example
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.log
+artifacts/
+
+# Local OCR pack outputs and model caches
+ocr-packs/**/.venv/
+ocr-packs/**/__pycache__/
+ocr-packs/**/*.onnx
+ocr-packs/**/*.bin
+ocr-packs/**/*.zip
+
+# Superseded brand explorations kept locally for design history
+Resources/Brand/Jieran-*
+Resources/Brand/Tuo-*
+Resources/Brand/Ta-AppIcon-borderless-v2.png
+Resources/Brand/Ta-AppIcon-source.png
+Resources/Jieran.icns
+Resources/Tuo.icns
+docs/brand/Jieran-*
+docs/brand/Tuo-*
+docs/brand/concepts/
+docs/brand/截然-Jieran-品牌方案.md
+docs/brand/Ta-home-red-seal-preview.png
+docs/brand/Ta-system-bars-preview.png
+docs/plans/2026-08-23-tuo-brand-ui-redesign-design.md

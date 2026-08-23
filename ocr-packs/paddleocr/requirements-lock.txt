@@ -1,0 +1,7 @@
+paddleocr==3.7.0
+paddlex==3.7.2
+onnxruntime==1.29.0
+numpy==2.3.5
+opencv-contrib-python==4.10.0.84
+pillow==12.3.0
+PyYAML==6.0.2

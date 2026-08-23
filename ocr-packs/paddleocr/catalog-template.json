@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "engine": "paddleOCR",
+      "version": "1.1.0",
+      "architecture": "arm64",
+      "minimumMacOS": "14.0",
+      "downloadURL": "__DOWNLOAD_URL__",
+      "archiveSHA256": "__ARCHIVE_SHA256__",
+      "archiveSize": __ARCHIVE_SIZE__
+    }
+  ]
+}

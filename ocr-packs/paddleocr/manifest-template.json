@@ -1,0 +1,10 @@
+{
+  "engine": "paddleOCR",
+  "version": "1.1.0",
+  "executable": "bin/paddleocr-adapter",
+  "executableSHA256": "__EXECUTABLE_SHA256__",
+  "architecture": "arm64",
+  "minimumMacOS": "14.0",
+  "healthCheckArguments": ["--health-check"],
+  "workerArguments": ["--worker"]
+}
