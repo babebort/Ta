@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#project-status)
+[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.0)
 
 **An AI-native screenshot tool: capture, OCR, understand images, translate, stitch, pin, and annotate in one flow.**
 
@@ -169,6 +169,12 @@ If the clipboard changes while recognition is running, Ta will not overwrite the
 - Apple Silicon or Intel Mac (the packaged PaddleOCR add-on currently targets Apple Silicon)
 - Xcode 26 or another Swift 6.2-compatible toolchain
 
+### Download
+
+[**Download Ta v1.0.0 (Universal macOS DMG)**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.0-macOS-universal.dmg)
+
+The installer supports both Apple Silicon and Intel Macs. Open the DMG and drag 「拓」 into `Applications`. This build is not yet Apple-notarized; on first launch, Control-click the app in Finder, choose **Open**, and confirm once more.
+
 ### Build from source
 
 ```bash
@@ -221,7 +227,7 @@ Ta/
 
 ## Project status
 
-Ta is currently **Alpha** software. Its core workflows are functional, but it is not yet a notarized public release.
+Ta v1.0.0 is the first directly downloadable public release. It ships as a universal DMG and ZIP for Apple Silicon and Intel Macs. The current build is not yet Apple-notarized, so first launch requires Control-clicking the app in Finder and choosing **Open**.
 
 Known limitations:
 
@@ -229,7 +235,7 @@ Known limitations:
 - Scrolling capture can still require manual seam correction on video, animation, translucent overlays, or heavily reflowing layouts.
 - Image translation uses local cover-and-redraw composition; complex textures, gradients, shadows, vertical text, and dense layouts can leave artifacts.
 - The repository contains PaddleOCR pack definitions, not the large locally built archives or model weights.
-- Local builds prefer Apple Development signing; public distribution still requires Developer ID signing and Apple notarization.
+- v1.0.0 uses Apple Development signing; Developer ID signing and Apple notarization are still in progress.
 
 ## Documentation
 
@@ -266,25 +272,34 @@ Agent features will remain permission-based, visible, and reversible. Ta should 
 - [ ] History, search, and result re-copy
 - [ ] Confirmable and reversible screenshot Agent workflows
 - [ ] Windows version
-- [ ] Developer ID signing, notarization, and public installer
+- [x] Universal macOS DMG, ZIP, and checksums
+- [ ] Developer ID signing and Apple notarization
 
 ## Free, open source, and built together
 
 Ta is free and open source under the [MIT License](./LICENSE). Anyone can download the source, build it, use it, modify it, and redistribute it.
 
-The project is still in Alpha. If your screenshot workflow has a problem Ta does not solve yet, open an Issue. If you would like to help improve it, pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before making changes, and include tests or reproducible validation steps for behavioral changes.
+If your screenshot workflow has a problem Ta does not solve yet, open an Issue. If you would like to help improve it, pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before making changes, and include tests or reproducible validation steps for behavioral changes.
 
 If Ta saves you an app switch or a repetitive step, please give the project a **Star**. It is the simplest way to support its development.
 
-## Author
+## About the Author
 
-**Kangarooking (袋鼠帝)** — AI creator and independent developer behind the Chinese publication “袋鼠帝 AI 客栈”.
+**kangarooking** — AI blogger, indie developer. Creator of AI Top WeChat Official Account「袋鼠帝 AI 客栈」
+
+Volcengine Navigation KOL, Baidu Qianfan Developer Ambassador, GLM Evangelist, Trae Kunming's First Fellow
 
 | Platform | Link |
 |----------|------|
-| GitHub | [@kangarooking](https://github.com/kangarooking) |
-| X / Twitter | [@aikangarooking](https://x.com/aikangarooking) |
-| Cangjie Skill | [kangarooking/cangjie-skill](https://github.com/kangarooking/cangjie-skill) |
+| 𝕏 Twitter | https://x.com/aikangarooking |
+| Xiaohongshu | https://xhslink.com/m/5YejKvIDBbL |
+| Douyin | https://v.douyin.com/hYpsjphuuKc |
+| WeChat Official Account | 袋鼠帝 AI 客栈 |
+| WeChat Video Channel | AI 袋鼠帝 |
+
+WeChat Official Account「袋鼠帝 AI 客栈」QR code:
+
+![](https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/kangarooking-gzh.png)
 
 ## ⭐ Star History
 

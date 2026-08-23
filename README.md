@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#当前状态)
+[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.0)
 
 **AI 原生截图工具：截图、取字、AI 识图、翻译、长截图、钉图与标注，一步完成。**
 
@@ -169,6 +169,12 @@ ScreenCaptureKit 捕获（排除 Ta 自身窗口）
 - Apple Silicon 或 Intel Mac（PaddleOCR 发行增强包目前面向 Apple Silicon）
 - Xcode 26，或兼容 Swift 6.2 的工具链
 
+### 下载安装包
+
+[**下载 Ta v1.0.0（macOS 通用版 DMG）**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.0-macOS-universal.dmg)
+
+安装包同时支持 Apple Silicon 与 Intel Mac。打开 DMG 后，把「拓」拖入 `Applications` 即可。当前版本尚未完成 Apple notarization；首次启动请在 Finder 中按住 Control 点击「拓」，选择“打开”，再确认一次。
+
 ### 从源码构建
 
 ```bash
@@ -230,7 +236,7 @@ Ta/
 
 ## 当前状态
 
-Ta 目前处于 **Alpha** 阶段，核心链路已经可运行，但还不是经过公证的正式发行版本。
+Ta v1.0.0 是首个可直接下载安装的公开版本，提供同时支持 Apple Silicon 与 Intel Mac 的通用 DMG 和 ZIP。当前发布包尚未完成 Apple notarization，因此首次启动需要在 Finder 中按住 Control 点击 App 并选择“打开”。
 
 已知限制：
 
@@ -238,7 +244,7 @@ Ta 目前处于 **Alpha** 阶段，核心链路已经可运行，但还不是经
 - 长截图已具备自动拼接与接缝修正，但持续动画、视频、半透明浮层和大幅重排页面仍可能需要人工调整。
 - 图片翻译使用本地遮盖和重绘；复杂纹理、渐变、阴影、竖排文字和极密集排版可能留下覆盖痕迹。
 - PaddleOCR 公开仓库包含增强包构建定义，不提交体积较大的本地构建产物。
-- 本地构建优先使用 Apple Development 签名；公开分发仍需要 Developer ID 签名和 Apple notarization。
+- v1.0.0 使用 Apple Development 签名；Developer ID 签名和 Apple notarization 仍在推进中。
 
 ## 文档
 
@@ -275,25 +281,40 @@ Agent 能力仍会坚持明确授权、过程可见、结果可撤销。Ta 希�
 - [ ] 历史记录、搜索与结果重新复制
 - [ ] 可确认、可撤销的截图 Agent 工作流
 - [ ] Windows 版本
-- [ ] Developer ID 签名、公证与公开安装包
+- [x] macOS 通用 DMG、ZIP 与校验文件
+- [ ] Developer ID 签名与 Apple notarization
 
 ## 免费、开源，也希望和大家一起做
 
 Ta 采用 [MIT 协议](./LICENSE) 免费开源。任何人都可以下载源码、构建、使用、修改和分发。
 
-项目目前仍在 Alpha 阶段。如果你在截图时遇到过 Ta 尚未解决的问题，欢迎提交 Issue；如果你愿意一起完善它，也欢迎发送 Pull Request。开始修改前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)，并尽量为行为变化补充测试或验收步骤。
+如果你在截图时遇到过 Ta 尚未解决的问题，欢迎提交 Issue；如果你愿意一起完善它，也欢迎发送 Pull Request。开始修改前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)，并尽量为行为变化补充测试或验收步骤。
 
 如果 Ta 帮你少切换一次应用、少做一步重复操作，欢迎点一个 **Star**。这就是对项目最直接的支持。
 
 ## 关于作者
 
-**袋鼠帝 kangarooking** — AI 博主、独立开发者，公众号「袋鼠帝 AI 客栈」主理人。
+**袋鼠帝 kangarooking** — AI 博主，独立开发者。AI Top 公众号「袋鼠帝 AI 客栈」主理人
+
+<img src="https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/wechat-personal-qr.jpg" width="220" alt="袋鼠帝个人微信二维码">
+
+火山引擎领航 KOL，百度千帆开发者大使，GLM 布道师，Trae 昆明第一任 Fellow
 
 | 平台 | 链接 |
 |------|------|
-| GitHub | [@kangarooking](https://github.com/kangarooking) |
-| X / Twitter | [@aikangarooking](https://x.com/aikangarooking) |
-| Cangjie Skill | [kangarooking/cangjie-skill](https://github.com/kangarooking/cangjie-skill) |
+| 𝕏 Twitter（袋鼠帝） | https://x.com/aikangarooking |
+| 小红书（袋鼠帝） | https://xhslink.com/m/5YejKvIDBbL |
+| 抖音（袋鼠帝） | https://v.douyin.com/hYpsjphuuKc |
+| 公众号 | 袋鼠帝 AI 客栈 |
+| 视频号 | AI 袋鼠帝 |
+
+微信公众号「袋鼠帝 AI 客栈」二维码：
+
+![](https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/kangarooking-gzh.png)
+
+如果你也想把书、长视频、播客、课程里的方法论蒸馏成可调用的 Agent Skills，欢迎加入 cangjie-skill 企微交流群：
+
+<img src="https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/wecom-cangjie-group-qr.png" width="220" alt="cangjie-skill 企微交流群二维码">
 
 ## ⭐ Star History
 

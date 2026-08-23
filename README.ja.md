@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#現在のステータス)
+[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.0)
 
 **キャプチャ、OCR、AI 画像理解、翻訳、スクロールキャプチャ、ピン留め、注釈を一つの流れにまとめた AI ネイティブ・スクリーンショットツールです。**
 
@@ -169,6 +169,12 @@ ScreenCaptureKit で撮影（Ta 自身のウインドウは除外）
 - Apple Silicon または Intel Mac（配布用 PaddleOCR 拡張パックは現在 Apple Silicon 向け）
 - Xcode 26、または Swift 6.2 互換ツールチェーン
 
+### ダウンロード
+
+[**Ta v1.0.0 をダウンロード（macOS Universal DMG）**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.0-macOS-universal.dmg)
+
+Apple Silicon と Intel Mac の両方に対応しています。DMG を開き、「拓」を `Applications` へドラッグしてください。現在のビルドは Apple notarization 未完了のため、初回起動時は Finder で Control キーを押しながらアプリをクリックし、「開く」を選んでもう一度確認してください。
+
 ### ソースからビルド
 
 ```bash
@@ -221,7 +227,7 @@ Ta/
 
 ## 現在のステータス
 
-Ta は現在 **Alpha** です。主要なワークフローは動作しますが、公証済みの正式リリースではありません。
+Ta v1.0.0 は、直接ダウンロードできる最初の公開版です。Apple Silicon と Intel Mac の両方に対応する Universal DMG と ZIP を提供します。現在のビルドは Apple notarization 未完了のため、初回起動時は Finder で Control キーを押しながらアプリをクリックし、「開く」を選ぶ必要があります。
 
 既知の制限：
 
@@ -229,7 +235,7 @@ Ta は現在 **Alpha** です。主要なワークフローは動作しますが
 - 動画、アニメーション、半透明オーバーレイ、大きく再配置されるレイアウトでは、スクロールキャプチャの継ぎ目を手動補正する場合があります。
 - 画像翻訳はローカルで文字を覆って再描画します。複雑なテクスチャ、グラデーション、影、縦書き、密なレイアウトでは跡が残ることがあります。
 - 公開リポジトリには PaddleOCR パックの定義のみを含み、ローカルで生成した大型アーカイブやモデル重みは含めません。
-- ローカルビルドは Apple Development 署名を優先します。一般配布には Developer ID 署名と Apple notarization が必要です。
+- v1.0.0 は Apple Development 署名を使用しています。Developer ID 署名と Apple notarization は引き続き対応中です。
 
 ## ドキュメント
 
@@ -266,25 +272,34 @@ Agent 機能も、明確な許可、見える処理、取り消せる結果を�
 - [ ] 履歴、検索、結果の再コピー
 - [ ] 確認可能で取り消せるスクリーンショット Agent ワークフロー
 - [ ] Windows 版
-- [ ] Developer ID 署名、公証、一般向けインストーラ
+- [x] macOS Universal DMG、ZIP、チェックサム
+- [ ] Developer ID 署名と Apple notarization
 
 ## 無料・オープンソース、そして一緒に育てる
 
 Ta は [MIT License](./LICENSE) のもとで無料公開されています。誰でもソースコードをダウンロードし、ビルド、利用、変更、再配布できます。
 
-プロジェクトはまだ Alpha 段階です。Ta がまだ解決できていないスクリーンショットの課題があれば、Issue で教えてください。改善に参加していただける Pull Request も歓迎します。変更前に [CONTRIBUTING.md](./CONTRIBUTING.md) を読み、挙動の変更にはテストまたは再現可能な検証手順を添えてください。
+Ta がまだ解決できていないスクリーンショットの課題があれば、Issue で教えてください。改善に参加していただける Pull Request も歓迎します。変更前に [CONTRIBUTING.md](./CONTRIBUTING.md) を読み、挙動の変更にはテストまたは再現可能な検証手順を添えてください。
 
 Ta がアプリの切り替えや反復作業を一つでも減らせたなら、ぜひ **Star** をお願いします。それが開発への最も直接的な応援になります。
 
-## 作者
+## 作者について
 
-**Kangarooking（袋鼠帝）** — 中国語メディア「袋鼠帝 AI 客栈」を運営する AI クリエイター、個人開発者。
+**袋鼠帝 kangarooking** — AI ブロガー、インディー開発者。AI Top 公式アカウント「袋鼠帝 AI 客栈」主宰
+
+Volcengine ナビゲーション KOL、Baidu Qianfan 開発者アンバサダー、GLM エバンジェリスト、Trae 昆明初代 Fellow
 
 | プラットフォーム | リンク |
 |------------------|--------|
-| GitHub | [@kangarooking](https://github.com/kangarooking) |
-| X / Twitter | [@aikangarooking](https://x.com/aikangarooking) |
-| Cangjie Skill | [kangarooking/cangjie-skill](https://github.com/kangarooking/cangjie-skill) |
+| 𝕏 Twitter | https://x.com/aikangarooking |
+| 小紅書 | https://xhslink.com/m/5YejKvIDBbL |
+| 抖音 | https://v.douyin.com/hYpsjphuuKc |
+| WeChat 公式アカウント | 袋鼠帝 AI 客栈 |
+| WeChat ビデオチャンネル | AI 袋鼠帝 |
+
+WeChat 公式アカウント「袋鼠帝 AI 客栈」QR コード:
+
+![](https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/kangarooking-gzh.png)
 
 ## ⭐ Star History
 

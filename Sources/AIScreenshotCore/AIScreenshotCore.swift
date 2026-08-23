@@ -1,3 +1,3 @@
 public enum AIScreenshotCore {
-    public static let version = "0.1.0-alpha"
+    public static let version = "1.0.0"
 }
