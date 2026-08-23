@@ -4,14 +4,14 @@
 
 # Ta · 拓
 
-### Lift information off your screen.
+### A thousand years ago, ink lifted words from stone. Today, AI lifts information from your screen.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-C98B2E.svg)](#project-status)
 
-**A macOS-first, local-first AI screenshot tool for capture, OCR, translation, scrolling screenshots, pinning, and annotation.**
+**An AI-native screenshot tool for macOS: capture, OCR, translate, stitch, pin, and annotate in one flow.**
 
 [简体中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md)
 
@@ -19,23 +19,35 @@
 
 ![Ta home screen](./docs/brand/Ta-home-preview.png)
 
-## Why the name “Ta”
+## More than a thousand years ago, China had its own kind of “screenshot”
 
-The Chinese character **拓** (`tà`) comes from the traditional art of ink rubbing: transferring information carved into stone or objects onto paper. Ta applies the same idea to the screen—capture text, images, and context, then immediately turn them into something you can copy, translate, annotate, pin, save, or reuse.
+Before cameras, photocopiers, or modern printing, people faced a practical question: how could they take the writing on a stone stele home?
 
-The Chinese name is 「拓」 and the English name is **Ta**.
+They laid paper over the stone and gently dabbed it with ink. When the paper was lifted, the characters left the stone and travelled with them. This craft is called **ink rubbing**—*tà yìn* (拓印)—and it has been practised for more than a thousand years. It was an ancient way to capture what you saw and keep it.
 
-## Why Ta exists
+The character 「拓」 tells the same story: `hand + stone`. The Chinese name is pronounced `tà`; the English name is **Ta**.
 
-There are plenty of screenshot apps, yet the actual workflow is still fragmented. You capture an image, open a separate OCR tool, switch again for translation, manually stitch long conversations, and launch an editor to prepare annotated images for publishing.
+Today, the stone has become a screen. Information appears faster and disappears faster. Ta does the same job: frame it and lift it out. Text becomes copyable and translatable; images can be annotated or pinned in view. A scrolling capture lifts the whole “stele,” while AI acts like a pocket epigrapher, helping you read what you captured.
 
-Ta treats screenshot capture as the beginning of an information workflow rather than the end:
+> Cangjie created characters; ink rubbing carried them forward. Creating information is only the beginning—it is complete when it can be preserved, understood, and taken with you.
 
-- extract text or copy an image immediately, without saving a temporary file;
-- choose independently between OCR and multimodal vision models;
-- process locally first and require confirmation before a low-confidence result is uploaded;
-- continue from a capture into translation, pinning, annotation, scrolling capture, or export;
-- trigger common workflows with customizable global shortcuts.
+## Why I built Ta
+
+I use screenshot software almost every day. There are countless free and paid options, but after trying many of them, I still could not find one tool that covered everything I needed. OCR, translation, scrolling capture, image pins, annotation, and publishing-ready styling were scattered across different apps and disconnected workflows.
+
+So I decided to build one.
+
+Most screenshot apps add OCR or an isolated AI button to an existing workflow. Ta is an attempt to make AI part of the workflow itself—and to keep improving that experience around real, everyday needs, first mine and then yours.
+
+## What “AI-native screenshot tool” means
+
+AI-native does not mean attaching a chat box to a traditional screenshot app. It means AI can help from the moment a capture is made:
+
+- **Capture it** — grab a region, a window, or a scrolling page;
+- **Read it** — extract text, tables, formulas, and code with local OCR or multimodal models;
+- **Understand it** — translate, explain, and structure what is on the screen;
+- **Keep it useful** — copy, pin, annotate, beautify, save, or continue processing;
+- **Respect boundaries** — prefer local recognition, ask before cloud processing, and keep API keys in macOS Keychain.
 
 ## Problems it solves
 
@@ -200,9 +212,13 @@ Known limitations:
 - [ ] History, search, and result re-copy
 - [ ] Developer ID signing, notarization, and public installer
 
-## Contributing
+## Free, open source, and built together
 
-Issues, feature proposals, and pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before making changes, and include tests or reproducible validation steps for behavioral changes.
+Ta is free and open source under the [MIT License](./LICENSE). Anyone can download the source, build it, use it, modify it, and redistribute it.
+
+The project is still in Alpha. If your screenshot workflow has a problem Ta does not solve yet, open an Issue. If you would like to help improve it, pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before making changes, and include tests or reproducible validation steps for behavioral changes.
+
+If Ta saves you an app switch or a repetitive step, please give the project a **Star**. It is the simplest way to support its development.
 
 ## Author
 
