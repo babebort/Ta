@@ -40,18 +40,18 @@ final class HotKeyPreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.shortcut(for: .interactiveCapture), original)
     }
 
-    func testShortcutWithoutPrimaryModifierIsRejected() {
+    func testSingleKeyShortcutPersistsWithoutModifier() throws {
         let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let invalid = HotKeyShortcut(
+        let singleKey = HotKeyShortcut(
             keyCode: UInt32(kVK_ANSI_A),
-            modifiers: UInt32(shiftKey),
+            modifiers: 0,
             keyLabel: "A"
         )
 
-        XCTAssertThrowsError(try preferences.save(invalid, for: .interactiveCapture)) { error in
-            XCTAssertEqual(error as? HotKeyPreferencesError, .missingPrimaryModifier)
-        }
+        try preferences.save(singleKey, for: .interactiveCapture)
+        XCTAssertEqual(preferences.shortcut(for: .interactiveCapture), singleKey)
+        XCTAssertEqual(preferences.shortcut(for: .interactiveCapture).displayText, "A")
     }
 
     @MainActor

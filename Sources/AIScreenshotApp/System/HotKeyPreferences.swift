@@ -15,9 +15,6 @@ struct HotKeyShortcut: Codable, Equatable, Hashable, Sendable {
         return result + keyLabel
     }
 
-    var hasPrimaryModifier: Bool {
-        modifiers & UInt32(controlKey | optionKey | cmdKey) != 0
-    }
 }
 
 enum GlobalHotKeyAction: String, CaseIterable, Codable, Hashable, Sendable {
@@ -81,13 +78,10 @@ enum GlobalHotKeyAction: String, CaseIterable, Codable, Hashable, Sendable {
 }
 
 enum HotKeyPreferencesError: LocalizedError, Equatable {
-    case missingPrimaryModifier
     case duplicate(action: GlobalHotKeyAction)
 
     var errorDescription: String? {
         switch self {
-        case .missingPrimaryModifier:
-            "全局快捷键至少需要包含 ⌘、⌥ 或 ⌃ 中的一个修饰键。"
         case .duplicate(let action):
             "这个组合已用于“\(action.displayName)”，请换一个快捷键。"
         }
@@ -120,9 +114,6 @@ struct HotKeyPreferences {
     }
 
     func save(_ shortcut: HotKeyShortcut, for action: GlobalHotKeyAction) throws {
-        guard shortcut.hasPrimaryModifier else {
-            throw HotKeyPreferencesError.missingPrimaryModifier
-        }
         if let duplicate = allShortcuts().first(where: { otherAction, otherShortcut in
             otherAction != action && otherShortcut.keyCode == shortcut.keyCode && otherShortcut.modifiers == shortcut.modifiers
         })?.key {

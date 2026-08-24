@@ -27,13 +27,9 @@ struct ScreenCaptureService {
             throw ScreenCaptureError.displayUnavailable
         }
 
-        let ownProcessID = ProcessInfo.processInfo.processIdentifier
-        let ownApplications = content.applications.filter { $0.processID == ownProcessID }
-        let filter = SCContentFilter(
-            display: display,
-            excludingApplications: ownApplications,
-            exceptingWindows: []
-        )
+        let excludedWindowIDs = Set(selection.excludedWindowIDs)
+        let excludedWindows = content.windows.filter { excludedWindowIDs.contains($0.windowID) }
+        let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
 
         let screenFrame = selection.screenFrame
         let clipped = selection.globalRect.intersection(screenFrame)

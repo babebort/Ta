@@ -38,7 +38,7 @@ struct HotKeySettingsView: View {
                         status("已恢复默认快捷键。")
                     }
                     Spacer()
-                    Text("点击组合键后，直接按下新快捷键")
+                    Text("点击当前快捷键后，直接按下新的单键或组合键")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -52,7 +52,7 @@ struct HotKeySettingsView: View {
                     .foregroundStyle(statusIsError ? .red : .green)
                 }
             } footer: {
-                Text("至少需要包含 ⌘、⌥ 或 ⌃。Escape 取消录制；应用内重复或被系统占用的组合不会覆盖当前可用配置。框选截图时可按右键或 Escape 退出。")
+                Text("支持单键和组合键。单独使用字母或数字会占用它在所有应用中的正常输入，请优先选择不常用按键。Escape 取消录制；重复或被系统占用的快捷键不会覆盖当前配置。框选截图时可按右键或 Escape 退出。")
             }
         }
         .formStyle(.grouped)

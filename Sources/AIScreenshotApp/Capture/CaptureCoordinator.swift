@@ -215,6 +215,12 @@ final class CaptureCoordinator {
         initialChangeCount: Int,
         completion: @escaping (CaptureOutcome) -> Void
     ) async {
+        let shouldDismissDeferredOverlay = action == .edit
+        defer {
+            if shouldDismissDeferredOverlay {
+                selectionOverlay.dismiss()
+            }
+        }
         do {
             try Task.checkCancellation()
             let image = try await captureService.capture(selection)
@@ -750,7 +756,9 @@ final class CaptureCoordinator {
         latestJobID = jobID
         let initialChangeCount = clipboardService.changeCount
 
-        selectionOverlay.begin(showsActionToolbar: false) { [weak self] selection, _ in
+        selectionOverlay.begin(
+            showsActionToolbar: false
+        ) { [weak self] selection, _ in
             guard let self else { return }
             guard let selection else {
                 completion(.cancelled)

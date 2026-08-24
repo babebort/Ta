@@ -72,11 +72,10 @@ final class HotKeyRecorderButton: NSButton {
         }
 
         let modifiers = Self.carbonModifiers(from: event.modifierFlags)
-        guard modifiers & UInt32(controlKey | optionKey | cmdKey) != 0,
-              let keyLabel = Self.keyLabel(for: event),
+        guard let keyLabel = Self.keyLabel(for: event),
               !keyLabel.isEmpty else {
             NSSound.beep()
-            title = "需包含 ⌘、⌥ 或 ⌃"
+            title = "无法识别这个按键"
             return
         }
 
@@ -113,7 +112,7 @@ final class HotKeyRecorderButton: NSButton {
 
     private func refreshTitle() {
         title = shortcut?.displayText ?? "点击设置"
-        toolTip = "点击后按下新的全局快捷键"
+        toolTip = "可设置单键或组合键；按 Escape 取消"
     }
 
     private static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {

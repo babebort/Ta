@@ -57,7 +57,9 @@ final class InlineAnnotationController: NSObject {
         completion: @escaping (InlineAnnotationAction?) -> Void
     ) {
         closePanel(restorePreviousApplication: false)
-        previousApplication = NSWorkspace.shared.frontmostApplication
+        previousApplication = selection.sourceApplicationProcessID.flatMap {
+            NSRunningApplication(processIdentifier: $0)
+        } ?? NSWorkspace.shared.frontmostApplication
         self.actionHandler = actionHandler
         self.completion = completion
 

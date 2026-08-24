@@ -80,6 +80,8 @@ final class AppModel: ObservableObject {
             scheduleLaunchCapture(.intelligent)
         } else if arguments.contains("--capture-image") {
             scheduleLaunchCapture(.image)
+        } else if arguments.contains("--capture-pin") {
+            scheduleLaunchCapture(.pin)
         } else {
             Task { [weak self] in
                 try? await Task.sleep(for: .milliseconds(180))
@@ -115,7 +117,6 @@ final class AppModel: ObservableObject {
         guard !isCapturing else { return }
         NotificationCenter.default.post(name: .taMenuBarShouldClose, object: nil)
         isCapturing = true
-        welcomeWindowController.hide()
         statusText = switch mode {
         case .interactive: "框选后选择操作"
         case .intelligent: "选择需要识别的区域"

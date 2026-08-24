@@ -1,6 +1,32 @@
 import AppKit
 import CoreImage
 
+enum PinnedImageLayout {
+    static func initialSize(
+        imagePixels: CGSize,
+        preferredLogicalSize: CGSize?,
+        visibleFrame: CGRect
+    ) -> CGSize {
+        let preferred = preferredLogicalSize.flatMap { size -> CGSize? in
+            guard size.width >= 1, size.height >= 1 else { return nil }
+            return size
+        }
+        let base = preferred ?? CGSize(
+            width: max(1, imagePixels.width),
+            height: max(1, imagePixels.height)
+        )
+        let screenLimit = CGSize(
+            width: max(1, visibleFrame.width - 24),
+            height: max(1, visibleFrame.height - 24)
+        )
+        let limit = preferred == nil
+            ? CGSize(width: min(640, screenLimit.width), height: min(480, screenLimit.height))
+            : screenLimit
+        let scale = min(1, limit.width / base.width, limit.height / base.height)
+        return CGSize(width: base.width * scale, height: base.height * scale)
+    }
+}
+
 @MainActor
 final class PinnedImageWindowController {
     private struct PinRecord {
@@ -19,7 +45,12 @@ final class PinnedImageWindowController {
     private var closedPins: [ClosedPin] = []
 
     func pin(_ image: CGImage, near selection: CaptureSelection) {
-        _ = createPin(image, near: selection, preferredFrame: nil)
+        _ = createPin(
+            image,
+            near: selection,
+            preferredFrame: nil,
+            preferredLogicalSize: selection.globalRect.size
+        )
     }
 
     func pinFromPasteboard() -> Bool {
@@ -27,16 +58,16 @@ final class PinnedImageWindowController {
         if let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff),
            let image = NSImage(data: data),
            let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            pin(cgImage, near: selectionAtMouse())
+            pinPasteboardImage(cgImage)
             return true
         }
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
            let url = urls.first {
             if let image = NSImage(contentsOf: url),
                let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                pin(cgImage, near: selectionAtMouse())
+                pinPasteboardImage(cgImage)
             } else if let card = makeTextCard(title: url.lastPathComponent, detail: url.path, icon: NSWorkspace.shared.icon(forFile: url.path)) {
-                pin(card, near: selectionAtMouse())
+                pinPasteboardImage(card)
             } else { return false }
             return true
         }
@@ -47,7 +78,7 @@ final class PinnedImageWindowController {
                options: [.documentType: NSAttributedString.DocumentType.html, .characterEncoding: String.Encoding.utf8.rawValue],
                documentAttributes: nil
            ), let image = renderText(attributed) {
-            pin(image, near: selectionAtMouse())
+            pinPasteboardImage(image)
             return true
         }
         if let text = pasteboard.string(forType: .string), !text.isEmpty {
@@ -56,7 +87,7 @@ final class PinnedImageWindowController {
                 .foregroundColor: NSColor.labelColor
             ])
             guard let image = renderText(attributed) else { return false }
-            pin(image, near: selectionAtMouse())
+            pinPasteboardImage(image)
             return true
         }
         return false
@@ -77,22 +108,42 @@ final class PinnedImageWindowController {
     @discardableResult
     func restoreLastClosed() -> Bool {
         guard let closed = closedPins.popLast() else { return false }
-        _ = createPin(closed.image, near: selectionAtMouse(), preferredFrame: closed.frame)
+        _ = createPin(
+            closed.image,
+            near: selectionAtMouse(),
+            preferredFrame: closed.frame,
+            preferredLogicalSize: nil
+        )
         return true
     }
 
-    @discardableResult
-    private func createPin(_ image: CGImage, near selection: CaptureSelection, preferredFrame: CGRect?) -> NSPanel {
-        let imageSize = CGSize(width: image.width, height: image.height)
-        let maximumSize = CGSize(width: 640, height: 480)
-        let minimumWidth: CGFloat = 180
-        let scale = min(1, maximumSize.width / imageSize.width, maximumSize.height / imageSize.height)
-        let width = max(minimumWidth, imageSize.width * scale)
-        let height = max(80, imageSize.height * (width / imageSize.width))
+    private func pinPasteboardImage(_ image: CGImage) {
+        _ = createPin(
+            image,
+            near: selectionAtMouse(),
+            preferredFrame: nil,
+            preferredLogicalSize: nil
+        )
+    }
 
+    @discardableResult
+    private func createPin(
+        _ image: CGImage,
+        near selection: CaptureSelection,
+        preferredFrame: CGRect?,
+        preferredLogicalSize: CGSize?
+    ) -> NSPanel {
+        let imageSize = CGSize(width: image.width, height: image.height)
         let visibleFrame = NSScreen.screens
             .first(where: { $0.frame.intersects(selection.globalRect) })?
             .visibleFrame ?? NSScreen.main?.visibleFrame ?? selection.screenFrame
+        let initialSize = PinnedImageLayout.initialSize(
+            imagePixels: imageSize,
+            preferredLogicalSize: preferredLogicalSize,
+            visibleFrame: visibleFrame
+        )
+        let width = initialSize.width
+        let height = initialSize.height
         let origin = CGPoint(
             x: min(max(visibleFrame.minX + 12, selection.globalRect.minX), visibleFrame.maxX - width - 12),
             y: min(max(visibleFrame.minY + 12, selection.globalRect.minY), visibleFrame.maxY - height - 12)
@@ -202,6 +253,25 @@ enum PinnedImageInteraction {
     }
 }
 
+struct PinnedImageDecorationState: Equatable {
+    var showsBorder = true
+    var showsShadow = true
+
+    mutating func toggleBorder() {
+        showsBorder.toggle()
+    }
+
+    mutating func toggleShadow() {
+        showsShadow.toggle()
+    }
+}
+
+enum PinnedImageDecoration {
+    static let borderTitle = "显示边框"
+    static let shadowTitle = "窗口阴影"
+    static let visibleBorderWidth: CGFloat = 1
+}
+
 private final class PinnedImageView: NSView {
     var onCopy: ((CGImage) -> Void)?
     var onClose: (() -> Void)?
@@ -223,6 +293,7 @@ private final class PinnedImageView: NSView {
     private var cropDragCurrent: CGPoint?
     private var thumbnailPreviousFrame: CGRect?
     private var isClosing = false
+    private var decoration = PinnedImageDecorationState()
 
     private enum FilteredMode {
         case none
@@ -238,7 +309,7 @@ private final class PinnedImageView: NSView {
         layer?.cornerRadius = 10
         layer?.masksToBounds = true
         layer?.borderColor = NSColor.white.withAlphaComponent(0.28).cgColor
-        layer?.borderWidth = 1
+        layer?.borderWidth = PinnedImageDecoration.visibleBorderWidth
 
         let menu = NSMenu()
         menu.addItem(withTitle: "复制图片", action: #selector(copyImage), keyEquivalent: "c")
@@ -252,6 +323,10 @@ private final class PinnedImageView: NSView {
         menu.addItem(.separator())
         menu.addItem(withTitle: "灰度显示", action: #selector(toggleGrayscale(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "反色显示", action: #selector(toggleInversion(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: PinnedImageDecoration.borderTitle, action: #selector(toggleBorder(_:)), keyEquivalent: "")
+        menu.items.last?.state = .on
+        menu.addItem(withTitle: PinnedImageDecoration.shadowTitle, action: #selector(toggleShadow(_:)), keyEquivalent: "")
+        menu.items.last?.state = .on
         menu.addItem(withTitle: "保持最前", action: #selector(toggleTopmost(_:)), keyEquivalent: "")
         menu.items.last?.state = .on
         menu.addItem(withTitle: "恢复显示", action: #selector(resetAppearance), keyEquivalent: "0")
@@ -442,6 +517,16 @@ private final class PinnedImageView: NSView {
         needsDisplay = true
     }
 
+    @objc private func toggleBorder(_ sender: NSMenuItem) {
+        decoration.toggleBorder()
+        applyDecoration()
+    }
+
+    @objc private func toggleShadow(_ sender: NSMenuItem) {
+        decoration.toggleShadow()
+        applyDecoration()
+    }
+
     @objc private func toggleTopmost(_ sender: NSMenuItem) {
         guard let window else { return }
         let shouldFloat = window.level != .floating
@@ -455,8 +540,10 @@ private final class PinnedImageView: NSView {
         isMirroredHorizontally = false
         isMirroredVertically = false
         filteredMode = .none
+        decoration = PinnedImageDecorationState()
         menu?.item(withTitle: "灰度显示")?.state = .off
         menu?.item(withTitle: "反色显示")?.state = .off
+        applyDecoration()
         if wasSideways, let window {
             var frame = window.frame
             let center = CGPoint(x: frame.midX, y: frame.midY)
@@ -465,6 +552,16 @@ private final class PinnedImageView: NSView {
             window.setFrame(frame, display: true, animate: true)
         }
         needsDisplay = true
+    }
+
+    private func applyDecoration() {
+        layer?.borderWidth = decoration.showsBorder
+            ? PinnedImageDecoration.visibleBorderWidth
+            : 0
+        window?.hasShadow = decoration.showsShadow
+        window?.invalidateShadow()
+        menu?.item(withTitle: PinnedImageDecoration.borderTitle)?.state = decoration.showsBorder ? .on : .off
+        menu?.item(withTitle: PinnedImageDecoration.shadowTitle)?.state = decoration.showsShadow ? .on : .off
     }
 
     @objc private func toggleThumbnail(_ sender: NSMenuItem) {
