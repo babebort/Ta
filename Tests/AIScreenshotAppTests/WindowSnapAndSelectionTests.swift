@@ -137,6 +137,57 @@ final class WindowSnapAndSelectionTests: XCTestCase {
         )
     }
 
+    func testResizeHitTargetsCoverCornersAndEntireEdges() {
+        let rect = CGRect(x: 100, y: 120, width: 320, height: 240)
+
+        XCTAssertEqual(SelectionRectEditor.resizeHandle(at: CGPoint(x: 100, y: 360), for: rect), .topLeft)
+        XCTAssertEqual(SelectionRectEditor.resizeHandle(at: CGPoint(x: 260, y: 360), for: rect), .top)
+        XCTAssertEqual(SelectionRectEditor.resizeHandle(at: CGPoint(x: 420, y: 220), for: rect), .right)
+        XCTAssertEqual(SelectionRectEditor.resizeHandle(at: CGPoint(x: 260, y: 120), for: rect), .bottom)
+        XCTAssertEqual(SelectionRectEditor.resizeHandle(at: CGPoint(x: 100, y: 220), for: rect), .left)
+        XCTAssertNil(SelectionRectEditor.resizeHandle(at: CGPoint(x: 260, y: 220), for: rect))
+    }
+
+    @MainActor
+    func testSelectionCanResizeByDraggingAnEdge() throws {
+        let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        view.showsActionToolbar = true
+        view.showPresetSelection(CGRect(x: 100, y: 120, width: 320, height: 240))
+        var selectedRect: CGRect?
+        view.onFinish = { rect, _ in selectedRect = rect }
+
+        view.mouseDown(with: try mouseEvent(type: .leftMouseDown, point: CGPoint(x: 420, y: 220)))
+        view.mouseDragged(with: try mouseEvent(type: .leftMouseDragged, point: CGPoint(x: 510, y: 220)))
+        view.mouseUp(with: try mouseEvent(type: .leftMouseUp, point: CGPoint(x: 510, y: 220)))
+        view.mouseDown(with: try mouseEvent(
+            type: .leftMouseDown,
+            point: CGPoint(x: 300, y: 220),
+            clickCount: 2
+        ))
+
+        XCTAssertEqual(selectedRect, CGRect(x: 100, y: 120, width: 410, height: 240))
+    }
+
+    @MainActor
+    func testToolbarUsesTopmostCustomTooltipAndPointingHandButtons() throws {
+        let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        view.showsActionToolbar = true
+        view.showPresetSelection(CGRect(x: 100, y: 120, width: 500, height: 300))
+        let button = try XCTUnwrap(descendants(of: view).compactMap { $0 as? CaptureActionButton }.first)
+
+        XCTAssertNil(button.toolTip)
+        button.mouseEntered(with: try enterExitEvent(type: .mouseEntered))
+
+        let tooltip = try XCTUnwrap(view.subviews.first {
+            $0.identifier?.rawValue == "capture-action-tooltip"
+        })
+        XCTAssertTrue(view.subviews.last === tooltip)
+        XCTAssertEqual(tooltip.layer?.zPosition, 10_000)
+
+        button.mouseExited(with: try enterExitEvent(type: .mouseExited))
+        XCTAssertFalse(view.subviews.contains { $0.identifier?.rawValue == "capture-action-tooltip" })
+    }
+
     @MainActor
     func testPresetSelectionCanBeMovedBeforeChoosingAnAction() throws {
         let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
@@ -174,5 +225,25 @@ final class WindowSnapAndSelectionTests: XCTestCase {
             clickCount: clickCount,
             pressure: 1
         ))
+    }
+
+    @MainActor
+    private func enterExitEvent(type: NSEvent.EventType) throws -> NSEvent {
+        try XCTUnwrap(NSEvent.enterExitEvent(
+            with: type,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 1,
+            trackingNumber: 1,
+            userData: nil
+        ))
+    }
+
+    @MainActor
+    private func descendants(of view: NSView) -> [NSView] {
+        view.subviews + view.subviews.flatMap(descendants(of:))
     }
 }

@@ -36,6 +36,74 @@ enum SelectionResizeHandle: CaseIterable {
         case .left: CGPoint(x: rect.minX, y: rect.midY)
         }
     }
+
+    func hitRect(in rect: CGRect, tolerance: CGFloat) -> CGRect {
+        let diameter = tolerance * 2
+        switch self {
+        case .topLeft, .topRight, .bottomRight, .bottomLeft:
+            let point = point(in: rect)
+            return CGRect(
+                x: point.x - tolerance,
+                y: point.y - tolerance,
+                width: diameter,
+                height: diameter
+            )
+        case .top:
+            return CGRect(
+                x: rect.minX + tolerance,
+                y: rect.maxY - tolerance,
+                width: max(0, rect.width - diameter),
+                height: diameter
+            )
+        case .right:
+            return CGRect(
+                x: rect.maxX - tolerance,
+                y: rect.minY + tolerance,
+                width: diameter,
+                height: max(0, rect.height - diameter)
+            )
+        case .bottom:
+            return CGRect(
+                x: rect.minX + tolerance,
+                y: rect.minY - tolerance,
+                width: max(0, rect.width - diameter),
+                height: diameter
+            )
+        case .left:
+            return CGRect(
+                x: rect.minX - tolerance,
+                y: rect.minY + tolerance,
+                width: diameter,
+                height: max(0, rect.height - diameter)
+            )
+        }
+    }
+
+    var cursor: NSCursor {
+        if #available(macOS 15.0, *) {
+            return .frameResize(position: frameResizePosition, directions: .all)
+        }
+        switch self {
+        case .top, .bottom:
+            return .resizeUpDown
+        case .left, .right, .topLeft, .topRight, .bottomRight, .bottomLeft:
+            return .resizeLeftRight
+        }
+    }
+
+    @available(macOS 15.0, *)
+    private var frameResizePosition: NSCursor.FrameResizePosition {
+        switch self {
+        case .topLeft: .topLeft
+        case .top: .top
+        case .topRight: .topRight
+        case .right: .right
+        case .bottomRight: .bottomRight
+        case .bottom: .bottom
+        case .bottomLeft: .bottomLeft
+        case .left: .left
+        }
+    }
 }
 
 enum SelectionDragMode {
@@ -45,6 +113,21 @@ enum SelectionDragMode {
 }
 
 enum SelectionRectEditor {
+    static let resizeHitTolerance: CGFloat = 10
+
+    static func resizeHandle(
+        at point: CGPoint,
+        for rect: CGRect,
+        tolerance: CGFloat = resizeHitTolerance
+    ) -> SelectionResizeHandle? {
+        let corners: [SelectionResizeHandle] = [.topLeft, .topRight, .bottomRight, .bottomLeft]
+        if let corner = corners.first(where: { $0.hitRect(in: rect, tolerance: tolerance).contains(point) }) {
+            return corner
+        }
+        let edges: [SelectionResizeHandle] = [.top, .right, .bottom, .left]
+        return edges.first(where: { $0.hitRect(in: rect, tolerance: tolerance).contains(point) })
+    }
+
     static func moved(_ rect: CGRect, by offset: CGPoint, inside bounds: CGRect) -> CGRect {
         let x = min(max(bounds.minX, rect.minX + offset.x), bounds.maxX - rect.width)
         let y = min(max(bounds.minY, rect.minY + offset.y), bounds.maxY - rect.height)
@@ -92,6 +175,41 @@ enum SelectionRectEditor {
     }
 }
 
+final class CaptureActionButton: NSButton {
+    var onHoverChange: ((Bool) -> Void)?
+    private var hoverTrackingArea: NSTrackingArea?
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverTrackingArea {
+            removeTrackingArea(hoverTrackingArea)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        NSCursor.pointingHand.set()
+        onHoverChange?(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        onHoverChange?(false)
+    }
+}
+
 final class SelectionOverlayView: NSView {
     var onFinish: ((CGRect?, CaptureQuickAction?) -> Void)?
     var showsActionToolbar = false
@@ -105,6 +223,7 @@ final class SelectionOverlayView: NSView {
     private var didDrag = false
     private var isTransitioning = false
     private var actionToolbar: NSVisualEffectView?
+    private var actionTooltip: NSView?
     private var showsPresetFixture = false
     private var trackingArea: NSTrackingArea?
 
@@ -116,6 +235,14 @@ final class SelectionOverlayView: NSView {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .crosshair)
+        guard showsActionToolbar, let selectionRect else { return }
+        addCursorRect(selectionRect.insetBy(dx: 4, dy: 4), cursor: .openHand)
+        for handle in SelectionResizeHandle.allCases {
+            addCursorRect(
+                handle.hitRect(in: selectionRect, tolerance: SelectionRectEditor.resizeHitTolerance),
+                cursor: handle.cursor
+            )
+        }
     }
 
     override func updateTrackingAreas() {
@@ -141,6 +268,7 @@ final class SelectionOverlayView: NSView {
         showsPresetFixture = true
         selectionRect = rect.integral
         dragStart = nil
+        invalidateCursorRects()
         needsDisplay = true
         if showsActionToolbar {
             showActionToolbar(for: rect.integral)
@@ -164,13 +292,16 @@ final class SelectionOverlayView: NSView {
            let handle = resizeHandle(at: point, for: selectionRect) {
             dragMode = .resizing(handle: handle, original: selectionRect)
             pendingSnapRect = nil
+            handle.cursor.set()
         } else if showsActionToolbar, let selectionRect, selectionRect.contains(point) {
             dragMode = .moving(original: selectionRect)
             pendingSnapRect = nil
+            NSCursor.closedHand.set()
         } else {
             dragMode = .creating
             pendingSnapRect = hoveredSnapTarget?.frame
             selectionRect = pendingSnapRect
+            NSCursor.crosshair.set()
         }
         didDrag = false
         needsDisplay = true
@@ -187,12 +318,14 @@ final class SelectionOverlayView: NSView {
             hoveredSnapTarget = nil
             selectionRect = normalizedRect(from: dragStart, to: current).intersection(bounds)
         case .moving(let original):
+            NSCursor.closedHand.set()
             selectionRect = SelectionRectEditor.moved(
                 original,
                 by: CGPoint(x: current.x - dragStart.x, y: current.y - dragStart.y),
                 inside: bounds
             )
         case .resizing(let handle, let original):
+            handle.cursor.set()
             selectionRect = SelectionRectEditor.resized(
                 original,
                 handle: handle,
@@ -200,6 +333,7 @@ final class SelectionOverlayView: NSView {
                 inside: bounds
             )
         }
+        invalidateCursorRects()
         needsDisplay = true
     }
 
@@ -223,6 +357,7 @@ final class SelectionOverlayView: NSView {
             pendingSnapRect = nil
             dragMode = .creating
             didDrag = false
+            invalidateCursorRects()
             needsDisplay = true
             if showsActionToolbar {
                 showActionToolbar(for: rect.integral)
@@ -235,13 +370,17 @@ final class SelectionOverlayView: NSView {
             dragMode = .creating
             selectionRect = nil
             didDrag = false
+            invalidateCursorRects()
             needsDisplay = true
         }
     }
 
     override func mouseMoved(with event: NSEvent) {
-        guard dragStart == nil, actionToolbar == nil, !isTransitioning else { return }
-        updateHoveredSnapTarget(at: convert(event.locationInWindow, from: nil))
+        guard dragStart == nil, !isTransitioning else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        cursor(at: point).set()
+        guard selectionRect == nil, actionToolbar == nil else { return }
+        updateHoveredSnapTarget(at: point)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -262,6 +401,7 @@ final class SelectionOverlayView: NSView {
         pendingSnapRect = nil
         hoveredSnapTarget = nil
         selectionRect = nil
+        invalidateCursorRects()
         needsDisplay = true
         onFinish?(nil, nil)
     }
@@ -345,13 +485,25 @@ final class SelectionOverlayView: NSView {
             }
             let image = NSImage(systemSymbolName: item.symbol, accessibilityDescription: item.title) ?? NSImage()
             let configured = image.withSymbolConfiguration(.init(pointSize: 13, weight: .medium)) ?? image
-            let button = NSButton(image: configured, target: self, action: #selector(handleAction(_:)))
+            let button = CaptureActionButton(
+                image: configured,
+                target: self,
+                action: #selector(handleAction(_:))
+            )
             button.tag = CaptureQuickAction.allCases.firstIndex(of: item.action) ?? index
             button.bezelStyle = .recessed
             button.controlSize = .regular
             button.imageScaling = .scaleProportionallyDown
-            button.toolTip = item.title
             button.setAccessibilityLabel(item.title)
+            button.identifier = NSUserInterfaceItemIdentifier("capture-action-\(item.action.rawValue)")
+            button.onHoverChange = { [weak self, weak button] isHovering in
+                guard let self else { return }
+                if isHovering, let button {
+                    self.showActionTooltip(item.title, for: button)
+                } else {
+                    self.hideActionTooltip()
+                }
+            }
             button.widthAnchor.constraint(equalToConstant: 36).isActive = true
             button.heightAnchor.constraint(equalToConstant: 32).isActive = true
             stack.addArrangedSubview(button)
@@ -380,6 +532,7 @@ final class SelectionOverlayView: NSView {
         stack.frame = toolbar.bounds
         addSubview(toolbar)
         actionToolbar = toolbar
+        invalidateCursorRects()
     }
 
     @objc
@@ -392,8 +545,10 @@ final class SelectionOverlayView: NSView {
     }
 
     private func removeActionToolbar() {
+        hideActionTooltip()
         actionToolbar?.removeFromSuperview()
         actionToolbar = nil
+        invalidateCursorRects()
     }
 
     private func normalizedRect(from start: CGPoint, to end: CGPoint) -> CGRect {
@@ -406,11 +561,71 @@ final class SelectionOverlayView: NSView {
     }
 
     private func resizeHandle(at point: CGPoint, for rect: CGRect) -> SelectionResizeHandle? {
-        let hitRadius: CGFloat = 8
-        return SelectionResizeHandle.allCases.first { handle in
-            let target = handle.point(in: rect)
-            return abs(point.x - target.x) <= hitRadius && abs(point.y - target.y) <= hitRadius
+        SelectionRectEditor.resizeHandle(at: point, for: rect)
+    }
+
+    private func cursor(at point: CGPoint) -> NSCursor {
+        guard showsActionToolbar, let selectionRect else { return .crosshair }
+        if let handle = resizeHandle(at: point, for: selectionRect) {
+            return handle.cursor
         }
+        return selectionRect.contains(point) ? .openHand : .crosshair
+    }
+
+    private func invalidateCursorRects() {
+        window?.invalidateCursorRects(for: self)
+    }
+
+    private func showActionTooltip(_ title: String, for button: NSButton) {
+        hideActionTooltip()
+
+        let label = NSTextField(labelWithString: title)
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.textColor = .white
+        label.alignment = .center
+        label.sizeToFit()
+
+        let horizontalPadding: CGFloat = 10
+        let verticalPadding: CGFloat = 6
+        let bubbleSize = CGSize(
+            width: ceil(label.frame.width) + horizontalPadding * 2,
+            height: ceil(label.frame.height) + verticalPadding * 2
+        )
+        let buttonFrame = button.convert(button.bounds, to: self)
+        let x = min(
+            max(6, buttonFrame.midX - bubbleSize.width / 2),
+            bounds.maxX - bubbleSize.width - 6
+        )
+        let proposedAbove = buttonFrame.maxY + 7
+        let y = proposedAbove + bubbleSize.height <= bounds.maxY - 6
+            ? proposedAbove
+            : max(6, buttonFrame.minY - bubbleSize.height - 7)
+
+        let bubble = NSView(frame: CGRect(origin: CGPoint(x: x, y: y), size: bubbleSize))
+        bubble.identifier = NSUserInterfaceItemIdentifier("capture-action-tooltip")
+        bubble.wantsLayer = true
+        bubble.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.90).cgColor
+        bubble.layer?.cornerRadius = 7
+        bubble.layer?.shadowColor = NSColor.black.cgColor
+        bubble.layer?.shadowOpacity = 0.35
+        bubble.layer?.shadowRadius = 6
+        bubble.layer?.shadowOffset = CGSize(width: 0, height: -2)
+        bubble.layer?.zPosition = 10_000
+
+        label.frame = CGRect(
+            x: horizontalPadding,
+            y: verticalPadding,
+            width: bubbleSize.width - horizontalPadding * 2,
+            height: bubbleSize.height - verticalPadding * 2
+        )
+        bubble.addSubview(label)
+        addSubview(bubble, positioned: .above, relativeTo: nil)
+        actionTooltip = bubble
+    }
+
+    private func hideActionTooltip() {
+        actionTooltip?.removeFromSuperview()
+        actionTooltip = nil
     }
 
     private func drawResizeHandles(around rect: CGRect, in context: CGContext) {
