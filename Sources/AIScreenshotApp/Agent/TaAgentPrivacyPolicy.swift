@@ -10,7 +10,7 @@ enum TaAgentPreferenceKey {
 }
 
 struct TaAgentPrivacyPolicy: Equatable, Sendable {
-    static let taBundleIdentifier = "com.kangarooking.AIScreenshot"
+    static let taBundleIdentifier = PersistentConfigurationIdentity.bundleIdentifier
 
     let isEnabled: Bool
     let automaticCaptureAllowed: Bool

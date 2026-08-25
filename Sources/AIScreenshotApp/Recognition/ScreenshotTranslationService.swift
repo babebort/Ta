@@ -16,7 +16,7 @@ enum ScreenshotTranslationServiceError: LocalizedError {
 }
 
 struct ScreenshotTranslationService: @unchecked Sendable {
-    static let keychainAccount = "deepseek-translation-default"
+    static let keychainAccount = PersistentConfigurationIdentity.translationProviderAccount
 
     private let client: TranslationProviderClient
     private let secretStore = KeychainSecretStore()

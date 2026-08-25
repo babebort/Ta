@@ -104,7 +104,7 @@ struct TranslationSettingsView: View {
             } header: {
                 Text("连接测试")
             } footer: {
-                Text("Key 不会写入偏好设置、源码或日志。全文和双语图片由本机重新排版；视觉回退开启时，截图会发送到所配置的视觉模型。")
+                Text("Key 不会写入偏好设置、源码或日志，在同一台 Mac 上覆盖升级拓时会继续保留。全文和双语图片由本机重新排版；视觉回退开启时，截图会发送到所配置的视觉模型。")
             }
         }
         .formStyle(.grouped)

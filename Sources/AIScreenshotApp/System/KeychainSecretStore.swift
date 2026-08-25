@@ -15,7 +15,7 @@ enum KeychainSecretStoreError: LocalizedError {
 struct KeychainSecretStore: Sendable {
     let service: String
 
-    init(service: String = "com.kangarooking.AIScreenshot.providers") {
+    init(service: String = PersistentConfigurationIdentity.keychainService) {
         self.service = service
     }
 

@@ -13,7 +13,7 @@ struct ModelSettingsView: View {
     @State private var statusMessage: String?
 
     private let secretStore = KeychainSecretStore()
-    private let account = "openai-compatible-default"
+    private let account = PersistentConfigurationIdentity.multimodalProviderAccount
 
     var body: some View {
         Form {
@@ -126,7 +126,7 @@ struct ModelSettingsView: View {
                     )
                 }
             } footer: {
-                Text("API Key 只保存在 macOS Keychain，不进入偏好设置、日志或配置导出。")
+                Text("API Key 只保存在 macOS Keychain，不进入偏好设置、日志或配置导出；在同一台 Mac 上覆盖升级拓时会继续保留。")
             }
         }
         .formStyle(.grouped)

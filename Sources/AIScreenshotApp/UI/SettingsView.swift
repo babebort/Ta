@@ -483,6 +483,9 @@ private struct DeepSeekOCRConfigurationRows: View {
             Text("当前最新专用模型为 DeepSeek-OCR-2。它约 6.79 GB，官方推理方案面向 CUDA，因此本应用连接 vLLM/SGLang 或兼容服务，不会在 Mac 上静默下载模型。DeepSeek 官方聊天 API 地址不能代替 OCR-2 服务地址。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Text("服务地址、模型名和 Key 在同一台 Mac 上覆盖升级拓时会继续保留。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .onAppear {
             hasStoredKey = secretStore.contains(account: DeepSeekOCRRecognitionService.keychainAccount)

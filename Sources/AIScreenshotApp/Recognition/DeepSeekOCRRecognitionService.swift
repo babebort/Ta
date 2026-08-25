@@ -15,7 +15,7 @@ enum DeepSeekOCRRecognitionError: LocalizedError {
 }
 
 struct DeepSeekOCRRecognitionService: @unchecked Sendable {
-    static let keychainAccount = "deepseek-ocr-2"
+    static let keychainAccount = PersistentConfigurationIdentity.deepSeekOCRAccount
 
     private let client = DeepSeekOCR2Client()
     private let secretStore = KeychainSecretStore()

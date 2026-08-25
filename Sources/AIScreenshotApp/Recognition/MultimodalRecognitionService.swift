@@ -15,7 +15,7 @@ enum MultimodalRecognitionError: LocalizedError {
 struct MultimodalRecognitionService {
     private let client = MultimodalProviderClient()
     private let secretStore = KeychainSecretStore()
-    private let account = "openai-compatible-default"
+    private let account = PersistentConfigurationIdentity.multimodalProviderAccount
 
     var isConfigured: Bool {
         !(UserDefaults.standard.string(forKey: "providerBaseURL") ?? "").isEmpty

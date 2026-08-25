@@ -1,6 +1,24 @@
 import AppKit
 import CoreImage
 
+enum AnnotationEditorWindowLayout {
+    static let styleMask: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable]
+}
+
+enum AnnotationEditorToolbarMetrics {
+    static let rowCount = 2
+    static let height: CGFloat = 96
+    static let horizontalInset: CGFloat = 16
+    static let verticalInset: CGFloat = 8
+    static let rowSpacing: CGFloat = 6
+    static let groupSpacing: CGFloat = 8
+    static let groupCornerRadius: CGFloat = 8
+    static let iconButtonSide: CGFloat = 30
+    static let toolPickerWidth: CGFloat = 184
+    static let widthSliderWidth: CGFloat = 104
+    static let opacitySliderWidth: CGFloat = 84
+}
+
 @MainActor
 final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
     private var windows: [NSWindow] = []
@@ -10,12 +28,12 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         let canvas = AnnotationCanvasView(image: image)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1080, height: 760),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            styleMask: AnnotationEditorWindowLayout.styleMask,
             backing: .buffered,
             defer: false
         )
         window.title = "标注截图"
-        window.titlebarAppearsTransparent = true
+        window.titlebarAppearsTransparent = false
         window.minSize = NSSize(width: 860, height: 600)
         window.isReleasedWhenClosed = false
         window.acceptsMouseMovedEvents = true
@@ -41,6 +59,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         toolbar.material = .headerView
         toolbar.blendingMode = .withinWindow
         toolbar.state = .active
+        toolbar.identifier = NSUserInterfaceItemIdentifier("annotation-editor-toolbar")
 
         let tools = NSPopUpButton(frame: .zero, pullsDown: false)
         for tool in AnnotationTool.allCases {
@@ -51,15 +70,21 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         tools.toolTip = "标注工具"
         tools.target = canvas
         tools.action = #selector(AnnotationCanvasView.selectTool(_:))
+        tools.controlSize = .regular
+        tools.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.toolPickerWidth).isActive = true
 
         let colorWell = NSColorWell()
         colorWell.color = .systemRed
         colorWell.target = canvas
         colorWell.action = #selector(AnnotationCanvasView.changeColor(_:))
+        colorWell.toolTip = "标注颜色"
+        colorWell.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        colorWell.heightAnchor.constraint(equalToConstant: 24).isActive = true
 
         let widthSlider = NSSlider(value: 5, minValue: 1, maxValue: 22, target: canvas, action: #selector(AnnotationCanvasView.changeWidth(_:)))
-        widthSlider.frame.size.width = 94
         widthSlider.toolTip = "线条粗细"
+        widthSlider.controlSize = .small
+        widthSlider.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.widthSliderWidth).isActive = true
 
         let textSize = NSPopUpButton()
         for size in AnnotationTextMetrics.availableSizes {
@@ -70,56 +95,82 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         textSize.target = canvas
         textSize.action = #selector(AnnotationCanvasView.changeTextSize(_:))
         textSize.toolTip = "文字字号"
+        textSize.controlSize = .small
+        textSize.widthAnchor.constraint(equalToConstant: 62).isActive = true
 
         let opacitySlider = NSSlider(value: 1, minValue: 0.15, maxValue: 1, target: canvas, action: #selector(AnnotationCanvasView.changeOpacity(_:)))
-        opacitySlider.frame.size.width = 72
         opacitySlider.toolTip = "透明度"
+        opacitySlider.controlSize = .small
+        opacitySlider.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.opacitySliderWidth).isActive = true
 
         let dashed = NSButton(checkboxWithTitle: "虚线", target: canvas, action: #selector(AnnotationCanvasView.changeDashed(_:)))
         dashed.toolTip = "形状和箭头使用虚线"
+        dashed.controlSize = .small
 
-        let undo = NSButton(image: NSImage(systemSymbolName: "arrow.uturn.backward", accessibilityDescription: "撤销") ?? NSImage(), target: canvas, action: #selector(AnnotationCanvasView.undo))
-        undo.toolTip = "撤销"
-        undo.bezelStyle = .texturedRounded
-        let redo = NSButton(image: NSImage(systemSymbolName: "arrow.uturn.forward", accessibilityDescription: "重做") ?? NSImage(), target: canvas, action: #selector(AnnotationCanvasView.redo))
-        redo.toolTip = "重做"
-        redo.bezelStyle = .texturedRounded
+        let undo = toolbarIconButton(symbol: "arrow.uturn.backward", tooltip: "撤销", target: canvas, action: #selector(AnnotationCanvasView.undo))
+        let redo = toolbarIconButton(symbol: "arrow.uturn.forward", tooltip: "重做", target: canvas, action: #selector(AnnotationCanvasView.redo))
+        let rotate = toolbarIconButton(symbol: "rotate.right", tooltip: "所选对象顺时针旋转 90°", target: canvas, action: #selector(AnnotationCanvasView.rotateSelected))
+        let shrink = toolbarIconButton(symbol: "minus.magnifyingglass", tooltip: "缩小所选对象", target: canvas, action: #selector(AnnotationCanvasView.shrinkSelected))
+        let grow = toolbarIconButton(symbol: "plus.magnifyingglass", tooltip: "放大所选对象", target: canvas, action: #selector(AnnotationCanvasView.growSelected))
 
-        let rotate = NSButton(image: NSImage(systemSymbolName: "rotate.right", accessibilityDescription: "旋转") ?? NSImage(), target: canvas, action: #selector(AnnotationCanvasView.rotateSelected))
-        rotate.toolTip = "所选对象顺时针旋转 90°"
-        rotate.bezelStyle = .texturedRounded
-        let shrink = NSButton(image: NSImage(systemSymbolName: "minus.magnifyingglass", accessibilityDescription: "缩小对象") ?? NSImage(), target: canvas, action: #selector(AnnotationCanvasView.shrinkSelected))
-        shrink.toolTip = "缩小所选对象"
-        shrink.bezelStyle = .texturedRounded
-        let grow = NSButton(image: NSImage(systemSymbolName: "plus.magnifyingglass", accessibilityDescription: "放大对象") ?? NSImage(), target: canvas, action: #selector(AnnotationCanvasView.growSelected))
-        grow.toolTip = "放大所选对象"
-        grow.bezelStyle = .texturedRounded
-
-        let copy = NSButton(title: "复制", target: nil, action: nil)
-        copy.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "复制")
-        copy.bezelStyle = .rounded
-        copy.target = canvas
-        copy.action = #selector(AnnotationCanvasView.copyRenderedImage)
-
-        let save = NSButton(title: "保存", target: nil, action: nil)
-        save.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: "保存")
-        save.bezelStyle = .rounded
-        save.target = self
-        save.action = #selector(saveEditorImage(_:))
+        let copy = toolbarActionButton(title: "复制", symbol: "doc.on.doc", target: canvas, action: #selector(AnnotationCanvasView.copyRenderedImage))
+        let save = toolbarActionButton(title: "保存", symbol: "square.and.arrow.down", target: self, action: #selector(saveEditorImage(_:)))
         save.identifier = NSUserInterfaceItemIdentifier("saveEditorImage")
 
-        let done = NSButton(title: "完成", target: nil, action: nil)
+        let done = NSButton(title: "完成", target: window, action: #selector(NSWindow.performClose(_:)))
         done.bezelStyle = .rounded
+        done.bezelColor = NSColor(
+            calibratedRed: 214 / 255,
+            green: 64 / 255,
+            blue: 47 / 255,
+            alpha: 1
+        )
+        done.contentTintColor = .white
+        done.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
         done.keyEquivalent = "\r"
-        done.target = window
-        done.action = #selector(NSWindow.performClose(_:))
 
-        let stack = NSStackView(views: [tools, colorWell, widthSlider, textSize, opacitySlider, dashed, rotate, shrink, grow, undo, redo, copy, save, done])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
-        stack.spacing = 9
-        stack.edgeInsets = NSEdgeInsets(top: 10, left: 14, bottom: 10, right: 14)
-        stack.setHuggingPriority(.defaultLow, for: .horizontal)
+        let toolGroup = toolbarGroup([
+            toolbarSymbolLabel("pencil.tip", accessibilityDescription: "工具"),
+            tools
+        ])
+        let historyGroup = toolbarGroup([undo, redo])
+        let outputGroup = toolbarGroup([copy, save, done])
+
+        let strokeGroup = toolbarGroup([
+            colorWell,
+            toolbarSymbolLabel("lineweight", accessibilityDescription: "线条粗细"),
+            widthSlider
+        ])
+        let textGroup = toolbarGroup([
+            toolbarSymbolLabel("textformat.size", accessibilityDescription: "文字字号"),
+            textSize
+        ])
+        let appearanceGroup = toolbarGroup([
+            toolbarSymbolLabel("circle.lefthalf.filled", accessibilityDescription: "透明度"),
+            opacitySlider,
+            dashed
+        ])
+        let transformGroup = toolbarGroup([rotate, shrink, grow])
+
+        let topSpacer = flexibleSpacer()
+        let topRow = toolbarRow([toolGroup, topSpacer, historyGroup, outputGroup])
+        topRow.identifier = NSUserInterfaceItemIdentifier("annotation-editor-toolbar-primary-row")
+
+        let bottomSpacer = flexibleSpacer()
+        let bottomRow = toolbarRow([strokeGroup, textGroup, appearanceGroup, bottomSpacer, transformGroup])
+        bottomRow.identifier = NSUserInterfaceItemIdentifier("annotation-editor-toolbar-style-row")
+
+        let stack = NSStackView(views: [topRow, bottomRow])
+        stack.orientation = .vertical
+        stack.alignment = .width
+        stack.distribution = .fillEqually
+        stack.spacing = AnnotationEditorToolbarMetrics.rowSpacing
+        stack.edgeInsets = NSEdgeInsets(
+            top: AnnotationEditorToolbarMetrics.verticalInset,
+            left: AnnotationEditorToolbarMetrics.horizontalInset,
+            bottom: AnnotationEditorToolbarMetrics.verticalInset,
+            right: AnnotationEditorToolbarMetrics.horizontalInset
+        )
 
         toolbar.addSubview(stack)
         root.addSubview(toolbar)
@@ -132,7 +183,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
             toolbar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             toolbar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             toolbar.topAnchor.constraint(equalTo: root.topAnchor),
-            toolbar.heightAnchor.constraint(equalToConstant: 56),
+            toolbar.heightAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.height),
             stack.leadingAnchor.constraint(equalTo: toolbar.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: toolbar.trailingAnchor),
             stack.topAnchor.constraint(equalTo: toolbar.topAnchor),
@@ -145,6 +196,88 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
 
         objc_setAssociatedObject(save, &AssociatedKeys.canvas, canvas, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return root
+    }
+
+    private func toolbarRow(_ views: [NSView]) -> NSStackView {
+        let row = NSStackView(views: views)
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = AnnotationEditorToolbarMetrics.groupSpacing
+        return row
+    }
+
+    private func toolbarGroup(_ views: [NSView]) -> NSVisualEffectView {
+        let group = NSVisualEffectView()
+        group.material = .contentBackground
+        group.blendingMode = .withinWindow
+        group.state = .active
+        group.wantsLayer = true
+        group.layer?.cornerRadius = AnnotationEditorToolbarMetrics.groupCornerRadius
+        group.layer?.masksToBounds = true
+        group.layer?.borderWidth = 0.5
+        group.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.52).cgColor
+
+        let stack = NSStackView(views: views)
+        stack.orientation = .horizontal
+        stack.alignment = .centerY
+        stack.spacing = 6
+        stack.edgeInsets = NSEdgeInsets(top: 3, left: 7, bottom: 3, right: 7)
+        group.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: group.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: group.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: group.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: group.bottomAnchor)
+        ])
+        return group
+    }
+
+    private func toolbarIconButton(
+        symbol: String,
+        tooltip: String,
+        target: AnyObject,
+        action: Selector
+    ) -> NSButton {
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)?
+            .withSymbolConfiguration(.init(pointSize: 12, weight: .medium)) ?? NSImage()
+        let button = NSButton(image: image, target: target, action: action)
+        button.bezelStyle = .texturedRounded
+        button.toolTip = tooltip
+        button.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.iconButtonSide).isActive = true
+        button.heightAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.iconButtonSide).isActive = true
+        return button
+    }
+
+    private func toolbarActionButton(
+        title: String,
+        symbol: String,
+        target: AnyObject,
+        action: Selector
+    ) -> NSButton {
+        let button = NSButton(title: title, target: target, action: action)
+        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)?
+            .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
+        button.imagePosition = .imageLeading
+        button.bezelStyle = .rounded
+        button.toolTip = title
+        return button
+    }
+
+    private func toolbarSymbolLabel(_ symbol: String, accessibilityDescription: String) -> NSImageView {
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: accessibilityDescription)?
+            .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
+        let imageView = NSImageView(image: image ?? NSImage())
+        imageView.toolTip = accessibilityDescription
+        imageView.contentTintColor = .secondaryLabelColor
+        return imageView
+    }
+
+    private func flexibleSpacer() -> NSView {
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return spacer
     }
 
     @objc
