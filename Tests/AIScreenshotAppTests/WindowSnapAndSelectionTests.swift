@@ -99,8 +99,70 @@ final class WindowSnapAndSelectionTests: XCTestCase {
         )
     }
 
+    func testSelectionCanMoveWithoutLeavingScreenBounds() {
+        let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
+        let original = CGRect(x: 100, y: 120, width: 320, height: 240)
+
+        XCTAssertEqual(
+            SelectionRectEditor.moved(original, by: CGPoint(x: 80, y: 40), inside: bounds),
+            CGRect(x: 180, y: 160, width: 320, height: 240)
+        )
+        XCTAssertEqual(
+            SelectionRectEditor.moved(original, by: CGPoint(x: 900, y: 900), inside: bounds),
+            CGRect(x: 480, y: 360, width: 320, height: 240)
+        )
+    }
+
+    func testSelectionCanResizeFromEveryEdge() {
+        let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
+        let original = CGRect(x: 100, y: 120, width: 320, height: 240)
+
+        XCTAssertEqual(
+            SelectionRectEditor.resized(
+                original,
+                handle: .right,
+                to: CGPoint(x: 510, y: 240),
+                inside: bounds
+            ),
+            CGRect(x: 100, y: 120, width: 410, height: 240)
+        )
+        XCTAssertEqual(
+            SelectionRectEditor.resized(
+                original,
+                handle: .bottomLeft,
+                to: CGPoint(x: 40, y: 60),
+                inside: bounds
+            ),
+            CGRect(x: 40, y: 60, width: 380, height: 300)
+        )
+    }
+
     @MainActor
-    private func mouseEvent(type: NSEvent.EventType, point: CGPoint) throws -> NSEvent {
+    func testPresetSelectionCanBeMovedBeforeChoosingAnAction() throws {
+        let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        view.showsActionToolbar = true
+        view.showPresetSelection(CGRect(x: 100, y: 120, width: 320, height: 240))
+        var selectedRect: CGRect?
+        view.onFinish = { rect, _ in selectedRect = rect }
+
+        view.mouseDown(with: try mouseEvent(type: .leftMouseDown, point: CGPoint(x: 250, y: 220)))
+        view.mouseDragged(with: try mouseEvent(type: .leftMouseDragged, point: CGPoint(x: 300, y: 250)))
+        view.mouseUp(with: try mouseEvent(type: .leftMouseUp, point: CGPoint(x: 300, y: 250)))
+        view.mouseDown(with: try mouseEvent(
+            type: .leftMouseDown,
+            point: CGPoint(x: 300, y: 250),
+            clickCount: 2
+        ))
+
+        XCTAssertEqual(selectedRect, CGRect(x: 150, y: 150, width: 320, height: 240))
+    }
+
+    @MainActor
+    private func mouseEvent(
+        type: NSEvent.EventType,
+        point: CGPoint,
+        clickCount: Int = 1
+    ) throws -> NSEvent {
         try XCTUnwrap(NSEvent.mouseEvent(
             with: type,
             location: point,
@@ -109,7 +171,7 @@ final class WindowSnapAndSelectionTests: XCTestCase {
             windowNumber: 0,
             context: nil,
             eventNumber: 1,
-            clickCount: 1,
+            clickCount: clickCount,
             pressure: 1
         ))
     }

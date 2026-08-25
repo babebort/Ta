@@ -37,23 +37,34 @@ struct TranslationSettingsView: View {
 
             Section("DeepSeek 模型") {
                 TextField("API 地址", text: $baseURL)
-                TextField("文字模型", text: $textModel)
-                TextField("视觉模型", text: $visionModel)
+                modelRow(
+                    title: "文字模型名称",
+                    value: $textModel,
+                    presets: [TranslationConfiguration.defaultTextModel]
+                )
+                modelRow(
+                    title: "视觉模型名称",
+                    value: $visionModel,
+                    presets: [TranslationConfiguration.defaultVisionModel]
+                )
                 Toggle("本地 OCR 低置信度时使用视觉模型", isOn: $usesVisionFallback)
-                Text("默认文字模型负责翻译；视觉模型只在 OCR 失败或置信度较低时读取本次选区。")
+                Text("模型名称可以直接输入，也可以从常用模型中选择；文字模型负责翻译，视觉模型只在 OCR 失败或置信度较低时读取本次选区。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("API Key") {
-                HStack {
-                    Circle()
-                        .fill(hasStoredKey ? Color.green : Color.orange)
-                        .frame(width: 8, height: 8)
-                    Text(hasStoredKey ? "API Key 已保存到 macOS Keychain" : "尚未保存 API Key")
-                        .font(.callout)
+                LabeledContent("API Key") {
+                    Label(
+                        hasStoredKey ? "•••••••••••• · 已安全保存" : "尚未保存",
+                        systemImage: hasStoredKey ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+                    )
+                    .foregroundStyle(hasStoredKey ? Color.green : Color.orange)
                 }
-                SecureField(hasStoredKey ? "输入新 Key 以更新" : "DeepSeek API Key", text: $apiKey)
+                SecureField(
+                    hasStoredKey ? "新的 API Key（不更新可留空）" : "DeepSeek API Key",
+                    text: $apiKey
+                )
 
                 HStack {
                     Button("恢复 DeepSeek 默认值") {
@@ -117,6 +128,27 @@ struct TranslationSettingsView: View {
             Menu("常用") {
                 ForEach(presets, id: \.self) { language in
                     Button(language) { value.wrappedValue = language }
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+    }
+
+    private func modelRow(
+        title: String,
+        value: Binding<String>,
+        presets: [String]
+    ) -> some View {
+        HStack {
+            TextField(title, text: value)
+            Menu("常用") {
+                ForEach(presets.filter { !$0.isEmpty }, id: \.self) { model in
+                    Button(model) { value.wrappedValue = model }
+                }
+                Divider()
+                Button("自定义模型名称") {
+                    value.wrappedValue = ""
                 }
             }
             .menuStyle(.borderlessButton)

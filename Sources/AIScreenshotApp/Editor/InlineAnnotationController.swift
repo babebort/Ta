@@ -42,7 +42,6 @@ final class InlineAnnotationController: NSObject {
 
     private var panel: InlineAnnotationPanel?
     private var canvas: AnnotationCanvasView?
-    private var previousApplication: NSRunningApplication?
     private var actionHandler: ActionHandler?
     private var completion: ((InlineAnnotationAction?) -> Void)?
     private var toolButtons: [AnnotationTool: NSButton] = [:]
@@ -56,16 +55,13 @@ final class InlineAnnotationController: NSObject {
         actionHandler: @escaping ActionHandler,
         completion: @escaping (InlineAnnotationAction?) -> Void
     ) {
-        closePanel(restorePreviousApplication: false)
-        previousApplication = selection.sourceApplicationProcessID.flatMap {
-            NSRunningApplication(processIdentifier: $0)
-        } ?? NSWorkspace.shared.frontmostApplication
+        closePanel()
         self.actionHandler = actionHandler
         self.completion = completion
 
         let panel = InlineAnnotationPanel(
             contentRect: selection.screenFrame,
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -75,6 +71,7 @@ final class InlineAnnotationController: NSObject {
         panel.hasShadow = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.animationBehavior = .none
+        panel.hidesOnDeactivate = false
         panel.acceptsMouseMovedEvents = true
         panel.onCancel = { [weak self] in self?.finish(nil) }
         panel.onCommit = { [weak self] in self?.perform(.copy) }
@@ -114,7 +111,9 @@ final class InlineAnnotationController: NSObject {
         self.panel = panel
         self.canvas = canvas
 
-        NSApplication.shared.activate(ignoringOtherApps: true)
+        // Match Snipaste: edit over the captured Space without activating Ta
+        // and switching the user back to the Space that owns Ta's main window.
+        panel.orderFrontRegardless()
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(canvas)
     }
@@ -312,11 +311,11 @@ final class InlineAnnotationController: NSObject {
         let completion = self.completion
         self.completion = nil
         actionHandler = nil
-        closePanel(restorePreviousApplication: true)
+        closePanel()
         completion?(action)
     }
 
-    private func closePanel(restorePreviousApplication: Bool) {
+    private func closePanel() {
         colorWell?.deactivate()
         NSColorPanel.shared.orderOut(nil)
         colorWell = nil
@@ -327,10 +326,9 @@ final class InlineAnnotationController: NSObject {
         panel = nil
         canvas = nil
         toolButtons.removeAll()
-        if restorePreviousApplication {
-            previousApplication?.activate(options: [])
-            previousApplication = nil
-        }
+        // The non-activating panel leaves the source application in front for
+        // the whole edit session, so explicitly activating it here would cause
+        // an unnecessary Space jump after copy/save/pin.
     }
 }
 

@@ -105,6 +105,23 @@ final class ScrollingCaptureSessionControllerTests: XCTestCase {
         XCTAssertEqual(observation, .rejected)
     }
 
+    func testClosingSeamReviewWindowCancelsCaptureSession() throws {
+        let stitcher = ScrollingImageStitcher()
+        _ = try stitcher.append(makeImage(width: 120, height: 80))
+        let controller = ScrollingSeamReviewWindowController()
+        var cancellationCount = 0
+
+        controller.present(
+            stitcher: stitcher,
+            onComplete: { _, _ in XCTFail("Closing the review window must not complete the capture") },
+            onCancel: { cancellationCount += 1 }
+        )
+        let window = try XCTUnwrap(NSApp.windows.first(where: { $0.title == "检查长截图接缝" }))
+        window.performClose(nil)
+
+        XCTAssertEqual(cancellationCount, 1)
+    }
+
     private func selection(height: CGFloat) -> CaptureSelection {
         CaptureSelection(
             globalRect: CGRect(x: 100, y: 100, width: 600, height: height),
@@ -112,5 +129,20 @@ final class ScrollingCaptureSessionControllerTests: XCTestCase {
             displayID: 1,
             backingScaleFactor: 2
         )
+    }
+
+    private func makeImage(width: Int, height: Int) throws -> CGImage {
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ), let image = context.makeImage() else {
+            throw NSError(domain: "ScrollingCaptureSessionControllerTests", code: 1)
+        }
+        return image
     }
 }

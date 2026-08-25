@@ -52,9 +52,19 @@ struct ModelSettingsView: View {
                     }
                 }
                 TextField("Base URL", text: $baseURL, prompt: Text("https://api.example.com/v1"))
-                SecureField(hasStoredKey ? "输入新 Key 以更新" : "API Key", text: $apiKey)
-                TextField("视觉模型", text: $visionModel)
-                TextField("文本模型", text: $textModel)
+                LabeledContent("API Key") {
+                    Label(
+                        hasStoredKey ? "•••••••••••• · 已安全保存" : "尚未保存",
+                        systemImage: hasStoredKey ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+                    )
+                    .foregroundStyle(hasStoredKey ? Color.green : Color.orange)
+                }
+                SecureField(
+                    hasStoredKey ? "新的 API Key（不更新可留空）" : "API Key",
+                    text: $apiKey
+                )
+                TextField("视觉模型名称", text: $visionModel)
+                TextField("文本模型名称", text: $textModel)
                 Picker("默认识图任务", selection: $taskTemplate) {
                     ForEach(MultimodalTaskTemplate.allCases, id: \.rawValue) { task in
                         Text(task.displayName).tag(task.rawValue)
@@ -110,7 +120,10 @@ struct ModelSettingsView: View {
                         save()
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(apiKey.isEmpty && hasStoredKey)
+                    .disabled(
+                        !hasStoredKey
+                            && apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
                 }
             } footer: {
                 Text("API Key 只保存在 macOS Keychain，不进入偏好设置、日志或配置导出。")
@@ -154,14 +167,17 @@ struct ModelSettingsView: View {
             statusMessage = validation
             return
         }
-        guard !apiKey.isEmpty else {
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty || hasStoredKey else {
             statusMessage = "请输入 API Key"
             return
         }
         do {
-            try secretStore.save(apiKey, account: account)
-            apiKey = ""
-            hasStoredKey = true
+            if !trimmedKey.isEmpty {
+                try secretStore.save(trimmedKey, account: account)
+                apiKey = ""
+                hasStoredKey = true
+            }
             statusMessage = "已保存到 Keychain"
         } catch {
             statusMessage = error.localizedDescription

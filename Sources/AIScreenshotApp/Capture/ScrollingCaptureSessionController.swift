@@ -272,16 +272,16 @@ final class ScrollingCaptureSessionController {
     }
 
     private func complete(images: [CGImage], reviewedSeams: Int) {
-        do {
-            let completion = self.completion
-            self.completion = nil
-            completion?(.completed(
-                images: images,
-                acceptedFrames: acceptedFrames,
-                skippedFrames: skippedFrames,
-                reviewedSeams: reviewedSeams
-            ))
-        }
+        let completion = self.completion
+        self.completion = nil
+        let outcome = ScrollingCaptureSessionOutcome.completed(
+            images: images,
+            acceptedFrames: acceptedFrames,
+            skippedFrames: skippedFrames,
+            reviewedSeams: reviewedSeams
+        )
+        releaseCapturedFrames()
+        completion?(outcome)
     }
 
     private func fail(_ error: Error) {
@@ -291,6 +291,7 @@ final class ScrollingCaptureSessionController {
         let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         let completion = self.completion
         self.completion = nil
+        releaseCapturedFrames()
         completion?(.failed(message))
     }
 
@@ -299,8 +300,7 @@ final class ScrollingCaptureSessionController {
         captureTask = nil
         closeHUD()
         seamReview.close()
-        stitcher.reset()
-        viewportMotionDetector.reset()
+        releaseCapturedFrames()
         if notify {
             let completion = self.completion
             self.completion = nil
@@ -315,6 +315,11 @@ final class ScrollingCaptureSessionController {
         panel?.close()
         panel = nil
         hudModel = nil
+    }
+
+    private func releaseCapturedFrames() {
+        stitcher.reset()
+        viewportMotionDetector.reset()
     }
 }
 

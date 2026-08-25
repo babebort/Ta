@@ -58,6 +58,7 @@ struct SettingsView: View {
             .foregroundStyle(isSelected ? TaPalette.cinnabar : TaPalette.mutedInk)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
             .background(
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(isSelected ? TaPalette.cinnabar.opacity(0.10) : Color.clear)

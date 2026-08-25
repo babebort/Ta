@@ -14,11 +14,90 @@ enum CaptureActionToolbarLayout {
     ]
 }
 
+enum SelectionResizeHandle: CaseIterable {
+    case topLeft
+    case top
+    case topRight
+    case right
+    case bottomRight
+    case bottom
+    case bottomLeft
+    case left
+
+    func point(in rect: CGRect) -> CGPoint {
+        switch self {
+        case .topLeft: CGPoint(x: rect.minX, y: rect.maxY)
+        case .top: CGPoint(x: rect.midX, y: rect.maxY)
+        case .topRight: CGPoint(x: rect.maxX, y: rect.maxY)
+        case .right: CGPoint(x: rect.maxX, y: rect.midY)
+        case .bottomRight: CGPoint(x: rect.maxX, y: rect.minY)
+        case .bottom: CGPoint(x: rect.midX, y: rect.minY)
+        case .bottomLeft: CGPoint(x: rect.minX, y: rect.minY)
+        case .left: CGPoint(x: rect.minX, y: rect.midY)
+        }
+    }
+}
+
+enum SelectionDragMode {
+    case creating
+    case moving(original: CGRect)
+    case resizing(handle: SelectionResizeHandle, original: CGRect)
+}
+
+enum SelectionRectEditor {
+    static func moved(_ rect: CGRect, by offset: CGPoint, inside bounds: CGRect) -> CGRect {
+        let x = min(max(bounds.minX, rect.minX + offset.x), bounds.maxX - rect.width)
+        let y = min(max(bounds.minY, rect.minY + offset.y), bounds.maxY - rect.height)
+        return CGRect(origin: CGPoint(x: x, y: y), size: rect.size).integral
+    }
+
+    static func resized(
+        _ rect: CGRect,
+        handle: SelectionResizeHandle,
+        to point: CGPoint,
+        inside bounds: CGRect
+    ) -> CGRect {
+        let point = CGPoint(
+            x: min(max(point.x, bounds.minX), bounds.maxX),
+            y: min(max(point.y, bounds.minY), bounds.maxY)
+        )
+        let x1: CGFloat
+        let x2: CGFloat
+        let y1: CGFloat
+        let y2: CGFloat
+        switch handle {
+        case .topLeft:
+            (x1, x2, y1, y2) = (point.x, rect.maxX, rect.minY, point.y)
+        case .top:
+            (x1, x2, y1, y2) = (rect.minX, rect.maxX, rect.minY, point.y)
+        case .topRight:
+            (x1, x2, y1, y2) = (rect.minX, point.x, rect.minY, point.y)
+        case .right:
+            (x1, x2, y1, y2) = (rect.minX, point.x, rect.minY, rect.maxY)
+        case .bottomRight:
+            (x1, x2, y1, y2) = (rect.minX, point.x, point.y, rect.maxY)
+        case .bottom:
+            (x1, x2, y1, y2) = (rect.minX, rect.maxX, point.y, rect.maxY)
+        case .bottomLeft:
+            (x1, x2, y1, y2) = (point.x, rect.maxX, point.y, rect.maxY)
+        case .left:
+            (x1, x2, y1, y2) = (point.x, rect.maxX, rect.minY, rect.maxY)
+        }
+        return CGRect(
+            x: min(x1, x2),
+            y: min(y1, y2),
+            width: abs(x2 - x1),
+            height: abs(y2 - y1)
+        ).intersection(bounds).integral
+    }
+}
+
 final class SelectionOverlayView: NSView {
     var onFinish: ((CGRect?, CaptureQuickAction?) -> Void)?
     var showsActionToolbar = false
 
     private var dragStart: CGPoint?
+    private var dragMode: SelectionDragMode = .creating
     private var selectionRect: CGRect?
     private var pendingSnapRect: CGRect?
     private var hoveredSnapTarget: WindowSnapTarget?
@@ -78,11 +157,21 @@ final class SelectionOverlayView: NSView {
             return
         }
 
-        removeActionToolbar()
         let point = convert(event.locationInWindow, from: nil)
+        removeActionToolbar()
         dragStart = point
-        pendingSnapRect = hoveredSnapTarget?.frame
-        selectionRect = pendingSnapRect
+        if showsActionToolbar, let selectionRect,
+           let handle = resizeHandle(at: point, for: selectionRect) {
+            dragMode = .resizing(handle: handle, original: selectionRect)
+            pendingSnapRect = nil
+        } else if showsActionToolbar, let selectionRect, selectionRect.contains(point) {
+            dragMode = .moving(original: selectionRect)
+            pendingSnapRect = nil
+        } else {
+            dragMode = .creating
+            pendingSnapRect = hoveredSnapTarget?.frame
+            selectionRect = pendingSnapRect
+        }
         didDrag = false
         needsDisplay = true
     }
@@ -92,9 +181,25 @@ final class SelectionOverlayView: NSView {
         let current = convert(event.locationInWindow, from: nil)
         guard didDrag || hypot(current.x - dragStart.x, current.y - dragStart.y) >= 3 else { return }
         didDrag = true
-        pendingSnapRect = nil
-        hoveredSnapTarget = nil
-        selectionRect = normalizedRect(from: dragStart, to: current).intersection(bounds)
+        switch dragMode {
+        case .creating:
+            pendingSnapRect = nil
+            hoveredSnapTarget = nil
+            selectionRect = normalizedRect(from: dragStart, to: current).intersection(bounds)
+        case .moving(let original):
+            selectionRect = SelectionRectEditor.moved(
+                original,
+                by: CGPoint(x: current.x - dragStart.x, y: current.y - dragStart.y),
+                inside: bounds
+            )
+        case .resizing(let handle, let original):
+            selectionRect = SelectionRectEditor.resized(
+                original,
+                handle: handle,
+                to: current,
+                inside: bounds
+            )
+        }
         needsDisplay = true
     }
 
@@ -103,11 +208,20 @@ final class SelectionOverlayView: NSView {
             return
         }
         let current = convert(event.locationInWindow, from: nil)
-        let rect = pendingSnapRect ?? normalizedRect(from: dragStart, to: current).intersection(bounds)
+        let rect: CGRect
+        switch dragMode {
+        case .creating:
+            rect = pendingSnapRect ?? normalizedRect(from: dragStart, to: current).intersection(bounds)
+        case .moving(let original):
+            rect = didDrag ? (selectionRect ?? original) : original
+        case .resizing(_, let original):
+            rect = didDrag ? (selectionRect ?? original) : original
+        }
         if rect.width >= 4, rect.height >= 4 {
             selectionRect = rect.integral
             self.dragStart = nil
             pendingSnapRect = nil
+            dragMode = .creating
             didDrag = false
             needsDisplay = true
             if showsActionToolbar {
@@ -118,6 +232,7 @@ final class SelectionOverlayView: NSView {
         } else {
             self.dragStart = nil
             pendingSnapRect = nil
+            dragMode = .creating
             selectionRect = nil
             didDrag = false
             needsDisplay = true
@@ -143,6 +258,7 @@ final class SelectionOverlayView: NSView {
         guard !isTransitioning else { return }
         removeActionToolbar()
         dragStart = nil
+        dragMode = .creating
         pendingSnapRect = nil
         hoveredSnapTarget = nil
         selectionRect = nil
@@ -194,6 +310,10 @@ final class SelectionOverlayView: NSView {
         context.setStrokeColor(NSColor.controlAccentColor.cgColor)
         context.setLineWidth(selectionRect == nil ? 1.5 : 2)
         context.stroke(displayRect.insetBy(dx: 1, dy: 1))
+
+        if selectionRect != nil, showsActionToolbar {
+            drawResizeHandles(around: displayRect, in: context)
+        }
 
         let dimensions = "\(Int(displayRect.width)) × \(Int(displayRect.height))"
         drawHint(dimensions, at: CGPoint(x: displayRect.midX, y: max(26, displayRect.minY - 18)))
@@ -283,6 +403,28 @@ final class SelectionOverlayView: NSView {
             width: abs(end.x - start.x),
             height: abs(end.y - start.y)
         )
+    }
+
+    private func resizeHandle(at point: CGPoint, for rect: CGRect) -> SelectionResizeHandle? {
+        let hitRadius: CGFloat = 8
+        return SelectionResizeHandle.allCases.first { handle in
+            let target = handle.point(in: rect)
+            return abs(point.x - target.x) <= hitRadius && abs(point.y - target.y) <= hitRadius
+        }
+    }
+
+    private func drawResizeHandles(around rect: CGRect, in context: CGContext) {
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.setLineWidth(1.5)
+        context.setFillColor(NSColor.white.cgColor)
+        context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        for handle in SelectionResizeHandle.allCases {
+            let point = handle.point(in: rect)
+            let handleRect = CGRect(x: point.x - 4, y: point.y - 4, width: 8, height: 8)
+            context.fillEllipse(in: handleRect)
+            context.strokeEllipse(in: handleRect)
+        }
     }
 
     private func drawHint(_ text: String, at point: CGPoint) {

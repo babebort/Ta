@@ -3,10 +3,12 @@ import AIScreenshotCore
 import SwiftUI
 
 @MainActor
-final class ScrollingSeamReviewWindowController {
+final class ScrollingSeamReviewWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var model: ScrollingSeamReviewModel?
     private var stitcher: ScrollingImageStitcher?
+    private var cancellationHandler: (() -> Void)?
+    private var isClosingProgrammatically = false
 
     func present(
         stitcher: ScrollingImageStitcher,
@@ -15,6 +17,7 @@ final class ScrollingSeamReviewWindowController {
     ) {
         close()
         self.stitcher = stitcher
+        cancellationHandler = onCancel
         let model = ScrollingSeamReviewModel()
         model.segments = stitcher.segments
         model.lowConfidenceCount = lowConfidenceCount(in: stitcher)
@@ -31,8 +34,7 @@ final class ScrollingSeamReviewWindowController {
             }
         }
         model.onCancel = { [weak self] in
-            self?.close()
-            onCancel()
+            self?.cancelReview()
         }
         self.model = model
         refreshPreview()
@@ -46,6 +48,7 @@ final class ScrollingSeamReviewWindowController {
         window.title = "检查长截图接缝"
         window.minSize = CGSize(width: 820, height: 560)
         window.isReleasedWhenClosed = false
+        window.delegate = self
         window.center()
         window.contentView = NSHostingView(rootView: ScrollingSeamReviewView(model: model))
         window.makeKeyAndOrderFront(nil)
@@ -54,11 +57,31 @@ final class ScrollingSeamReviewWindowController {
     }
 
     func close() {
+        isClosingProgrammatically = true
+        window?.delegate = nil
         window?.orderOut(nil)
         window?.close()
         window = nil
         model = nil
         stitcher = nil
+        cancellationHandler = nil
+        isClosingProgrammatically = false
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard !isClosingProgrammatically else { return }
+        let handler = cancellationHandler
+        window = nil
+        model = nil
+        stitcher = nil
+        cancellationHandler = nil
+        handler?()
+    }
+
+    private func cancelReview() {
+        let handler = cancellationHandler
+        close()
+        handler?()
     }
 
     private func adjust(id: UUID, delta: Int) {
