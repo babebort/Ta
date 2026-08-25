@@ -48,3 +48,19 @@ struct TranslationConfiguration: Equatable, Sendable {
         return nil
     }
 }
+
+enum TranslationModeRouting {
+    static func mode(
+        for action: CaptureQuickAction,
+        configuredDefault: ScreenshotTranslationMode
+    ) -> ScreenshotTranslationMode? {
+        switch action {
+        case .translate:
+            configuredDefault
+        case .translateText:
+            .textOnly
+        default:
+            nil
+        }
+    }
+}

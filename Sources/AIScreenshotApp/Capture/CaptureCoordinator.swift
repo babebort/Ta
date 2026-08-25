@@ -300,13 +300,11 @@ final class CaptureCoordinator {
             }
 
             if action == .translate || action == .translateText {
-                let mode: ScreenshotTranslationMode?
-                if action == .translateText {
-                    mode = .textOnly
-                } else {
-                    mode = chooseTranslationMode()
-                }
-                guard let mode else {
+                let configuration = TranslationConfiguration.load()
+                guard let mode = TranslationModeRouting.mode(
+                    for: action,
+                    configuredDefault: configuration.defaultMode
+                ) else {
                     completion(.cancelled)
                     return
                 }
@@ -726,29 +724,6 @@ final class CaptureCoordinator {
             autoHide: true
         )
         completion(.completed("已生成\(modeName)"))
-    }
-
-    private func chooseTranslationMode() -> ScreenshotTranslationMode? {
-        let configuration = TranslationConfiguration.load()
-        let modes = ScreenshotTranslationMode.allCases
-        let picker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 260, height: 28), pullsDown: false)
-        modes.forEach { picker.addItem(withTitle: $0.displayName) }
-        if let index = modes.firstIndex(of: configuration.defaultMode) {
-            picker.selectItem(at: index)
-        }
-
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = "选择截图翻译方式"
-        alert.informativeText = "文字模式会复制译文；图片模式会生成可继续标注、复制和保存的新图片。"
-        alert.accessoryView = picker
-        alert.addButton(withTitle: "开始翻译")
-        alert.addButton(withTitle: "取消")
-        guard alert.runModal() == .alertFirstButtonReturn,
-              modes.indices.contains(picker.indexOfSelectedItem) else {
-            return nil
-        }
-        return modes[picker.indexOfSelectedItem]
     }
 
     private func startLongCapture(completion: @escaping (CaptureOutcome) -> Void) {

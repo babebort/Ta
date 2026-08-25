@@ -30,7 +30,7 @@ struct TranslationSettingsView: View {
                         Text(mode.displayName).tag(mode.rawValue)
                     }
                 }
-                Text("语言可以直接输入任意名称；快捷键 \(translationShortcut.displayText) 始终执行“翻译文字并复制”。")
+                Text("工具栏“翻译”会直接执行这里的默认方式；语言可以直接输入任意名称。快捷键 \(translationShortcut.displayText) 始终执行“翻译文字并复制”。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
