@@ -22,7 +22,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "AIScreenshotApp",
-            dependencies: ["AIScreenshotCore"],
+            dependencies: ["AIScreenshotCore", "TaAgentContracts"],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("Carbon"),
