@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "AIScreenshotCore", targets: ["AIScreenshotCore"]),
         .library(name: "TaAgentContracts", targets: ["TaAgentContracts"]),
         .library(name: "TaAgentClient", targets: ["TaAgentClient"]),
+        .executable(name: "ta", targets: ["TaCLI"]),
         .executable(name: "AIScreenshotApp", targets: ["AIScreenshotApp"])
     ],
     targets: [
@@ -37,6 +38,10 @@ let package = Package(
                 .linkedFramework("Security")
             ]
         ),
+        .executableTarget(
+            name: "TaCLI",
+            dependencies: ["TaAgentClient", "TaAgentContracts"]
+        ),
         .testTarget(
             name: "AIScreenshotCoreTests",
             dependencies: ["AIScreenshotCore"]
@@ -48,6 +53,10 @@ let package = Package(
         .testTarget(
             name: "TaAgentClientTests",
             dependencies: ["TaAgentClient", "TaAgentContracts"]
+        ),
+        .testTarget(
+            name: "TaCLITests",
+            dependencies: ["TaCLI", "TaAgentContracts"]
         ),
         .testTarget(
             name: "AIScreenshotAppTests",

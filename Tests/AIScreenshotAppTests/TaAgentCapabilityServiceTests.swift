@@ -108,6 +108,28 @@ struct TaAgentCapabilityServiceTests {
         #expect(await fixture.dependenciesProbe.analyzeCount == 0)
     }
 
+    @Test("window list filters by either app name or bundle identifier")
+    func windowListAppFilter() async throws {
+        let fixture = try CapabilityFixture()
+
+        let byName = await fixture.service.handle(request(
+            .targetListWindows,
+            params: ["app": .string("saf")]
+        ))
+        let byBundle = await fixture.service.handle(request(
+            .targetListWindows,
+            params: ["app": .string("com.apple.Safari")]
+        ))
+        let missing = await fixture.service.handle(request(
+            .targetListWindows,
+            params: ["app": .string("Finder")]
+        ))
+
+        #expect(byName.data?.objectValue?["windows"]?.arrayValue?.count == 1)
+        #expect(byBundle.data?.objectValue?["windows"]?.arrayValue?.count == 1)
+        #expect(missing.data?.objectValue?["windows"]?.arrayValue?.isEmpty == true)
+    }
+
     private func request(
         _ method: AgentMethod,
         params: [String: JSONValue] = [:]
@@ -237,6 +259,12 @@ private extension TaAgentPrivacyPolicy {
 private extension JSONValue {
     var objectValue: [String: JSONValue]? {
         guard case .object(let value) = self else { return nil }
+        return value
+    }
+
+
+    var arrayValue: [JSONValue]? {
+        guard case .array(let value) = self else { return nil }
         return value
     }
 }

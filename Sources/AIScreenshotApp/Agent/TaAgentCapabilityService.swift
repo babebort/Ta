@@ -226,10 +226,15 @@ actor TaAgentCapabilityService {
 
     private func listWindows(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
         let snapshot = try await captureService.snapshot()
-        let bundleFilter = request.params.string("bundleIdentifier")?.lowercased()
+        let appFilter = (request.params.string("app")
+            ?? request.params.string("bundleIdentifier"))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
         let windows = snapshot.windows.filter { window in
             privacyPolicy.allowsWindowMetadata(bundleIdentifier: window.bundleIdentifier)
-                && (bundleFilter == nil || window.bundleIdentifier?.lowercased() == bundleFilter)
+                && (appFilter == nil
+                    || window.bundleIdentifier?.lowercased() == appFilter
+                    || window.appName.lowercased().contains(appFilter ?? ""))
         }
         return .success(
             requestID: request.requestID,

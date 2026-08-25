@@ -1,0 +1,136 @@
+import AppKit
+import Darwin
+import Foundation
+import TaAgentClient
+import TaAgentContracts
+
+struct CLIRunner: Sendable {
+    private let launcher: TaAppLauncher
+
+    init(applicationURL: URL? = nil) {
+        launcher = TaAppLauncher(applicationURL: applicationURL ?? Self.applicationURLFromEnvironment())
+    }
+
+    func execute(_ invocation: CLIInvocation) async throws -> AgentResponseEnvelope {
+        switch invocation.action {
+        case .request(let method, let params):
+            let response = try await send(
+                method: method,
+                params: params,
+                invocation: invocation,
+                requestIDSuffix: nil
+            )
+            return try await saveCaptureOutputIfNeeded(response, invocation: invocation)
+
+        case .ocrThenTranslate(let params):
+            let ocr = try await send(
+                method: .recognizeOCR,
+                params: params,
+                invocation: invocation,
+                requestIDSuffix: "ocr"
+            )
+            guard ocr.ok else { return ocr }
+            guard case .object(let data) = ocr.data,
+                  case .string(let text) = data["text"],
+                  !text.isEmpty else {
+                return .failure(
+                    requestID: invocation.requestID,
+                    error: AgentErrorPayload(
+                        code: .invalidRequest,
+                        message: "OCR 没有返回可翻译文字。",
+                        retryable: false
+                    )
+                )
+            }
+            var translationParams: [String: JSONValue] = ["text": .string(text)]
+            if let cloud = params["cloud"] { translationParams["cloud"] = cloud }
+            return try await send(
+                method: .translateText,
+                params: translationParams,
+                invocation: invocation,
+                requestIDSuffix: "translate"
+            )
+        }
+    }
+
+    private func send(
+        method: AgentMethod,
+        params: [String: JSONValue],
+        invocation: CLIInvocation,
+        requestIDSuffix: String?
+    ) async throws -> AgentResponseEnvelope {
+        let requestID = requestIDSuffix.map { "\(invocation.requestID)-\($0)" } ?? invocation.requestID
+        let request = AgentRequestEnvelope(
+            requestID: requestID,
+            method: method,
+            params: params,
+            client: AgentClientInfo(name: "ta-cli", version: "1.0.0")
+        )
+        let client = TaBridgeClient(socketURL: invocation.socketURL, timeout: invocation.timeout)
+        do {
+            return try await client.send(request)
+        } catch let error as TaBridgeClientError where Self.isUnavailable(error) {
+            try await launcher.launch()
+            return try await waitForBridge(client: client, request: request, timeout: invocation.timeout)
+        }
+    }
+
+    private func waitForBridge(
+        client: TaBridgeClient,
+        request: AgentRequestEnvelope,
+        timeout: TimeInterval
+    ) async throws -> AgentResponseEnvelope {
+        let deadline = Date().addingTimeInterval(min(timeout, 5))
+        var lastError: Error = TaBridgeClientError.connectionClosed
+        while Date() < deadline {
+            try Task.checkCancellation()
+            do {
+                return try await client.send(request)
+            } catch {
+                lastError = error
+                try await Task.sleep(for: .milliseconds(80))
+            }
+        }
+        throw lastError
+    }
+
+    private func saveCaptureOutputIfNeeded(
+        _ response: AgentResponseEnvelope,
+        invocation: CLIInvocation
+    ) async throws -> AgentResponseEnvelope {
+        guard response.ok,
+              let outputPath = invocation.outputPath,
+              !response.artifacts.isEmpty else { return response }
+        let saveResponse = try await send(
+            method: .deliverSave,
+            params: ["path": .string(outputPath)],
+            invocation: invocation,
+            requestIDSuffix: "save"
+        )
+        guard saveResponse.ok else { return saveResponse }
+        var object: [String: JSONValue] = [:]
+        if case .object(let existing) = response.data { object = existing }
+        object["savedPath"] = .string(outputPath)
+        return AgentResponseEnvelope(
+            requestID: response.requestID,
+            ok: true,
+            data: .object(object),
+            artifacts: response.artifacts,
+            meta: response.meta
+        )
+    }
+
+    private static func isUnavailable(_ error: TaBridgeClientError) -> Bool {
+        guard case .socketFailure(let operation, let code) = error, operation == "connect" else {
+            return false
+        }
+        return code == ENOENT || code == ECONNREFUSED
+    }
+
+    private static func applicationURLFromEnvironment() -> URL {
+        if let path = ProcessInfo.processInfo.environment["TA_APP_PATH"], !path.isEmpty {
+            return URL(fileURLWithPath: path).standardizedFileURL
+        }
+        return TaAppLauncher.defaultApplicationURL
+    }
+}
