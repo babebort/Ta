@@ -200,6 +200,24 @@ open "artifacts/拓.app"
 
 进入“设置 → 快捷键”可以重新录制任意组合键。冲突快捷键会被拒绝或自动回滚。
 
+## 让 Agent 调用 Ta
+
+Ta 现在也可以作为 Agent 的视觉输入层，以三种形式提供能力：
+
+- **Ta Agent Skill**：教支持 Agent Skills 的 Agent 正确组合截图、OCR、识图和翻译流程；
+- **`ta` CLI**：提供稳定的 JSON 命令，可用于 Shell、脚本和通用 Agent；
+- **`dsh-ta`**：真正的 DeepSeek Harness 原生 Cordis Plugin + Bundle，直接注册截图与理解工具。
+
+它们共同调用由「拓.app」托管的本机 Bridge。普通 Agent 截图不会弹出拓、抢焦点、移动鼠标或发送键盘事件；权限、模型和 API Key 仍由拓统一管理。
+
+```bash
+ta status --json
+ta capture frontmost --json
+ta ocr last --json
+```
+
+在“设置 → Agent”可以关闭自动化、禁止云端、配置隐私 App 黑名单、清理缓存并查看不包含识别正文的最近调用记录。安装 CLI、Skill 和 DeepSeek Harness 插件的完整步骤见 [Agent 集成指南](./docs/agent-integration.md)。
+
 ## 隐私与安全
 
 - 普通截图与 Apple Vision OCR 始终在本机完成。
@@ -208,6 +226,7 @@ open "artifacts/拓.app"
 - 低置信度智能路由不会静默上传，必须由用户再次确认。
 - API Key 只保存在 macOS Keychain，不写入偏好设置、日志或仓库。
 - Ta 不持续录屏，只读取用户主动框选的区域。
+- Agent Bridge 只监听当前用户可访问的本机 Unix Socket；审计不保存请求参数、识别正文或图片数据。
 
 ## 工程结构
 
@@ -222,12 +241,16 @@ Ta/
 │   │   ├── LongCapture/       位移匹配、拼接与进度检测
 │   │   ├── Recognition/       OCR/视觉/翻译 Provider 客户端
 │   │   └── Clipboard/         剪贴板安全提交策略
-│   └── AIScreenshotApp/
-│       ├── Capture/           框选、捕获与长截图会话
-│       ├── Editor/            标注编辑器
-│       ├── Recognition/       OCR 增强包与多模态路由
-│       ├── System/            快捷键、权限、Keychain、剪贴板
-│       └── UI/                主界面、菜单栏、设置、钉图与结果栏
+│   ├── AIScreenshotApp/
+│   │   ├── Capture/           框选、捕获与长截图会话
+│   │   ├── Editor/            标注编辑器
+│   │   ├── Recognition/       OCR 增强包与多模态路由
+│   │   ├── System/            快捷键、权限、Keychain、剪贴板
+│   │   └── UI/                主界面、菜单栏、设置、钉图与结果栏
+│   ├── TaAgentContracts/      Bridge 协议
+│   ├── TaAgentClient/         本机 Bridge 客户端
+│   └── TaCLI/                 ta CLI
+├── Integrations/              Agent Skill 与 DeepSeek Harness 原生插件
 ├── Tests/                     Core 与 App 测试
 ├── ocr-packs/paddleocr/       可选 PaddleOCR 增强包构建定义
 ├── scripts/                   构建、运行和增强包脚本
@@ -253,6 +276,7 @@ Ta v1.0.0 是首个可直接下载安装的公开版本，提供同时支持 App
 - [Alpha 验证记录](./docs/alpha-verification.md)
 - [长截图验收矩阵](./docs/long-capture-acceptance-matrix.md)
 - [PaddleOCR 增强包规范](./docs/ocr-enhancement-pack-spec.md)
+- [Agent Skill、CLI 与 DeepSeek Harness 集成指南](./docs/agent-integration.md)
 
 ## 展望：让截图成为 Agent 的眼睛
 
@@ -275,6 +299,7 @@ Agent 能力仍会坚持明确授权、过程可见、结果可撤销。Ta 希�
 - [x] 原位标注、马赛克画笔与钉图
 - [x] 截图翻译与多 Provider 模型配置
 - [x] PaddleOCR 可选离线增强包协议
+- [x] Agent Skill、`ta` CLI 与 DeepSeek Harness 原生插件
 - [ ] 多显示器跨屏框选与窗口吸附
 - [ ] 公众号截图模板与参数化美化
 - [ ] AI 美化、智能隐私遮挡与多尺寸生成

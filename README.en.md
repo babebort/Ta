@@ -200,6 +200,24 @@ On first launch, grant Screen & System Audio Recording permission. Accessibility
 
 Open **Settings → Shortcuts** to record any new combination. Conflicting shortcuts are rejected or rolled back automatically.
 
+## Use Ta from an Agent
+
+Ta can now act as an Agent's visual input layer in three forms:
+
+- **Ta Agent Skill** teaches compatible Agents how to combine capture, OCR, vision, and translation safely;
+- **`ta` CLI** provides stable JSON commands for shells, scripts, and general Agents;
+- **`dsh-ta`** is a native DeepSeek Harness Cordis Plugin + Bundle that registers capture and understanding tools directly.
+
+All three call the local Bridge hosted by 「拓.app」. Ordinary Agent captures do not show Ta, steal focus, move the pointer, or send keyboard events. Permissions, model profiles, and API keys remain managed by Ta.
+
+```bash
+ta status --json
+ta capture frontmost --json
+ta ocr last --json
+```
+
+Use **Settings → Agent** to disable automation, deny cloud processing, block sensitive apps by bundle ID, clear temporary artifacts, and inspect redacted recent calls. See the [Agent integration guide](./docs/agent-integration.md) for CLI, Skill, and DeepSeek Harness installation.
+
 ## Privacy and security
 
 - Standard capture and Apple Vision OCR always run on-device.
@@ -208,6 +226,7 @@ Open **Settings → Shortcuts** to record any new combination. Conflicting short
 - Low-confidence smart routing never uploads silently and always requires confirmation.
 - API keys are stored only in macOS Keychain, never in preferences, logs, or this repository.
 - Ta does not continuously record the screen; it reads only a region the user actively selects.
+- The Agent Bridge uses a current-user-only local Unix socket, and its audit log stores no request parameters, recognized text, or image data.
 
 ## Repository structure
 
@@ -218,7 +237,11 @@ Ta/
 ├── Resources/                 icons, Info.plist, and brand assets
 ├── Sources/
 │   ├── AIScreenshotCore/      OCR, stitching, providers, clipboard policy
-│   └── AIScreenshotApp/       capture, editor, routing, system, and UI
+│   ├── AIScreenshotApp/       capture, editor, routing, system, and UI
+│   ├── TaAgentContracts/      Bridge protocol
+│   ├── TaAgentClient/         local Bridge client
+│   └── TaCLI/                 ta CLI
+├── Integrations/              Agent Skill and native DeepSeek Harness plugin
 ├── Tests/                     Core and App tests
 ├── ocr-packs/paddleocr/       optional PaddleOCR pack definitions
 ├── scripts/                   build, run, and OCR pack scripts
@@ -244,6 +267,7 @@ Known limitations:
 - [Alpha verification](./docs/alpha-verification.md)
 - [Scrolling capture acceptance matrix](./docs/long-capture-acceptance-matrix.md)
 - [PaddleOCR add-on specification](./docs/ocr-enhancement-pack-spec.md)
+- [Agent Skill, CLI, and DeepSeek Harness integration guide](./docs/agent-integration.md)
 
 ## Vision: screenshots as an Agent's eyes
 
@@ -266,6 +290,7 @@ Agent features will remain permission-based, visible, and reversible. Ta should 
 - [x] In-place annotation, brush mosaic, and image pins
 - [x] Screenshot translation and multi-provider configuration
 - [x] Optional offline PaddleOCR pack protocol
+- [x] Agent Skill, `ta` CLI, and native DeepSeek Harness plugin
 - [ ] Cross-display region selection and window snapping
 - [ ] Publishing templates and parameterized screenshot styling
 - [ ] AI beautification, smart privacy redaction, and multi-size generation

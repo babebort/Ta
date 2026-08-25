@@ -200,6 +200,24 @@ open "artifacts/拓.app"
 
 「設定 → ショートカット」で任意の組み合わせを再登録できます。競合するショートカットは拒否されるか、自動的に元へ戻ります。
 
+## Agent から Ta を使う
+
+Ta は Agent の視覚入力レイヤーとして、次の三つの形で利用できます。
+
+- **Ta Agent Skill** — 対応 Agent に、キャプチャ、OCR、画像理解、翻訳を安全に組み合わせる方法を伝えます。
+- **`ta` CLI** — Shell、スクリプト、一般的な Agent 向けに安定した JSON コマンドを提供します。
+- **`dsh-ta`** — DeepSeek Harness にツールを直接登録するネイティブ Cordis Plugin + Bundle です。
+
+三つとも「拓.app」がホストするローカル Bridge を利用します。通常の Agent キャプチャでは Ta を表示せず、フォーカスを奪わず、ポインターを移動せず、キーイベントも送信しません。権限、モデル設定、API Key は引き続き Ta が管理します。
+
+```bash
+ta status --json
+ta capture frontmost --json
+ta ocr last --json
+```
+
+「設定 → Agent」では、自動化の無効化、クラウド処理の禁止、Bundle ID による機密 App のブロック、キャッシュ削除、内容を伏せた最近の呼び出し履歴を確認できます。CLI、Skill、DeepSeek Harness の導入手順は [Agent 統合ガイド](./docs/agent-integration.md) を参照してください。
+
 ## プライバシーとセキュリティ
 
 - 通常のキャプチャと Apple Vision OCR は常に端末内で処理します。
@@ -208,6 +226,7 @@ open "artifacts/拓.app"
 - 低信頼度スマートルーティングは無断でアップロードせず、必ず確認を求めます。
 - API Key は macOS Keychain のみに保存し、設定ファイル、ログ、リポジトリには書き込みません。
 - Ta は画面を常時録画せず、ユーザーが選択した領域だけを読み取ります。
+- Agent Bridge は現在のユーザーだけが使えるローカル Unix Socket を利用し、監査ログにはリクエスト引数、認識本文、画像データを保存しません。
 
 ## リポジトリ構成
 
@@ -218,7 +237,11 @@ Ta/
 ├── Resources/                 アイコン、Info.plist、ブランド素材
 ├── Sources/
 │   ├── AIScreenshotCore/      OCR、長画像結合、Provider、Clipboard
-│   └── AIScreenshotApp/       撮影、エディタ、ルーティング、システム、UI
+│   ├── AIScreenshotApp/       撮影、エディタ、ルーティング、システム、UI
+│   ├── TaAgentContracts/      Bridge プロトコル
+│   ├── TaAgentClient/         ローカル Bridge クライアント
+│   └── TaCLI/                 ta CLI
+├── Integrations/              Agent Skill と DeepSeek Harness ネイティブプラグイン
 ├── Tests/                     Core / App テスト
 ├── ocr-packs/paddleocr/       PaddleOCR 拡張パック定義
 ├── scripts/                   ビルド、実行、OCR パックスクリプト
@@ -244,6 +267,7 @@ Ta v1.0.0 は、直接ダウンロードできる最初の公開版です。Appl
 - [Alpha 検証記録](./docs/alpha-verification.md)
 - [スクロールキャプチャ受け入れ基準](./docs/long-capture-acceptance-matrix.md)
 - [PaddleOCR 拡張パック仕様](./docs/ocr-enhancement-pack-spec.md)
+- [Agent Skill、CLI、DeepSeek Harness 統合ガイド](./docs/agent-integration.md)
 
 ## 展望：スクリーンショットを Agent の目に
 
@@ -266,6 +290,7 @@ Agent 機能も、明確な許可、見える処理、取り消せる結果を�
 - [x] その場での注釈、ブラシ型モザイク、画像ピン
 - [x] スクリーンショット翻訳と複数 Provider 設定
 - [x] オフライン PaddleOCR 拡張パックの仕組み
+- [x] Agent Skill、`ta` CLI、DeepSeek Harness ネイティブプラグイン
 - [ ] 複数画面をまたぐ領域選択とウインドウスナップ
 - [ ] 公開用テンプレートとパラメータ化された画像スタイル
 - [ ] AI 美化、スマートな個人情報マスキング、複数サイズ生成

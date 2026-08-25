@@ -12,6 +12,9 @@ APP_BUNDLE_DIR="$RELEASE_DIR/$PRODUCT_NAME.app"
 DMG_PATH="$RELEASE_DIR/Ta-$VERSION-macOS-universal.dmg"
 ZIP_PATH="$RELEASE_DIR/Ta-$VERSION-macOS-universal.zip"
 CHECKSUM_PATH="$RELEASE_DIR/SHA256SUMS.txt"
+CLI_ARCHIVE_PATH="$RELEASE_DIR/Ta-CLI-$VERSION-macOS-universal.tar.gz"
+SKILL_ARCHIVE_PATH="$RELEASE_DIR/Ta-Agent-Skill-$VERSION.zip"
+DSH_ARCHIVE_PATH="$RELEASE_DIR/dsh-ta-$VERSION.tgz"
 
 PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
 if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
@@ -84,11 +87,27 @@ hdiutil create \
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE_DIR" "$ZIP_PATH"
 
+"$PROJECT_ROOT_DIR/scripts/package-ta-cli.sh" "$VERSION" "$RELEASE_DIR"
+"$PROJECT_ROOT_DIR/scripts/package-ta-skill.sh" "$VERSION" "$RELEASE_DIR"
+"$PROJECT_ROOT_DIR/scripts/package-dsh-ta.sh" "$VERSION" "$RELEASE_DIR"
+
 (
     cd "$RELEASE_DIR"
-    shasum -a 256 "${DMG_PATH:t}" "${ZIP_PATH:t}" > "${CHECKSUM_PATH:t}"
+    shasum -a 256 \
+        "${DMG_PATH:t}" \
+        "${ZIP_PATH:t}" \
+        "${CLI_ARCHIVE_PATH:t}" \
+        "${SKILL_ARCHIVE_PATH:t}" \
+        "${DSH_ARCHIVE_PATH:t}" \
+        > "${CHECKSUM_PATH:t}"
 )
 
 echo "Release artifacts:"
-ls -lh "$DMG_PATH" "$ZIP_PATH" "$CHECKSUM_PATH"
+ls -lh \
+    "$DMG_PATH" \
+    "$ZIP_PATH" \
+    "$CLI_ARCHIVE_PATH" \
+    "$SKILL_ARCHIVE_PATH" \
+    "$DSH_ARCHIVE_PATH" \
+    "$CHECKSUM_PATH"
 cat "$CHECKSUM_PATH"
