@@ -234,11 +234,14 @@ final class SelectionOverlayView: NSView {
     }
 
     override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .crosshair)
-        guard showsActionToolbar, let selectionRect else { return }
-        addCursorRect(selectionRect.insetBy(dx: 4, dy: 4), cursor: .openHand)
+        addValidCursorRect(bounds, cursor: .crosshair)
+        if let actionToolbar {
+            addValidCursorRect(actionToolbar.frame, cursor: .pointingHand)
+        }
+        guard dragStart == nil, showsActionToolbar, let selectionRect else { return }
+        addValidCursorRect(selectionRect.insetBy(dx: 4, dy: 4), cursor: .openHand)
         for handle in SelectionResizeHandle.allCases {
-            addCursorRect(
+            addValidCursorRect(
                 handle.hitRect(in: selectionRect, tolerance: SelectionRectEditor.resizeHitTolerance),
                 cursor: handle.cursor
             )
@@ -333,7 +336,6 @@ final class SelectionOverlayView: NSView {
                 inside: bounds
             )
         }
-        invalidateCursorRects()
         needsDisplay = true
     }
 
@@ -516,6 +518,7 @@ final class SelectionOverlayView: NSView {
         toolbar.wantsLayer = true
         toolbar.layer?.cornerRadius = 12
         toolbar.layer?.masksToBounds = true
+        toolbar.identifier = NSUserInterfaceItemIdentifier("capture-action-toolbar")
         toolbar.addSubview(stack)
 
         let fittingSize = stack.fittingSize
@@ -564,7 +567,10 @@ final class SelectionOverlayView: NSView {
         SelectionRectEditor.resizeHandle(at: point, for: rect)
     }
 
-    private func cursor(at point: CGPoint) -> NSCursor {
+    func cursor(at point: CGPoint) -> NSCursor {
+        if let actionToolbar, actionToolbar.frame.contains(point) {
+            return .pointingHand
+        }
         guard showsActionToolbar, let selectionRect else { return .crosshair }
         if let handle = resizeHandle(at: point, for: selectionRect) {
             return handle.cursor
@@ -574,6 +580,17 @@ final class SelectionOverlayView: NSView {
 
     private func invalidateCursorRects() {
         window?.invalidateCursorRects(for: self)
+    }
+
+    private func addValidCursorRect(_ rect: CGRect, cursor: NSCursor) {
+        let clippedRect = rect.intersection(bounds)
+        guard !clippedRect.isNull,
+              !clippedRect.isInfinite,
+              clippedRect.width > 0,
+              clippedRect.height > 0 else {
+            return
+        }
+        addCursorRect(clippedRect, cursor: cursor)
     }
 
     private func showActionTooltip(_ title: String, for button: NSButton) {

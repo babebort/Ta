@@ -169,13 +169,34 @@ final class WindowSnapAndSelectionTests: XCTestCase {
     }
 
     @MainActor
+    func testTinyInitialDragNeverRegistersInvalidCursorRects() throws {
+        let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+        view.showsActionToolbar = true
+
+        view.mouseDown(with: try mouseEvent(type: .leftMouseDown, point: CGPoint(x: 100, y: 100)))
+        view.mouseDragged(with: try mouseEvent(type: .leftMouseDragged, point: CGPoint(x: 105, y: 105)))
+
+        // AppKit aborts the process when addCursorRect receives an empty or
+        // negative-sized rectangle, so reaching this assertion is the regression check.
+        view.resetCursorRects()
+        XCTAssertTrue(true)
+    }
+
+    @MainActor
     func testToolbarUsesTopmostCustomTooltipAndPointingHandButtons() throws {
         let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
         view.showsActionToolbar = true
         view.showPresetSelection(CGRect(x: 100, y: 120, width: 500, height: 300))
         let button = try XCTUnwrap(descendants(of: view).compactMap { $0 as? CaptureActionButton }.first)
+        let toolbar = try XCTUnwrap(view.subviews.first {
+            $0.identifier?.rawValue == "capture-action-toolbar"
+        })
+        let toolbarCenter = CGPoint(x: toolbar.frame.midX, y: toolbar.frame.midY)
 
         XCTAssertNil(button.toolTip)
+        XCTAssertTrue(view.cursor(at: toolbarCenter) === NSCursor.pointingHand)
+        view.mouseMoved(with: try mouseEvent(type: .mouseMoved, point: toolbarCenter))
+        XCTAssertTrue(NSCursor.current === NSCursor.pointingHand)
         button.mouseEntered(with: try enterExitEvent(type: .mouseEntered))
 
         let tooltip = try XCTUnwrap(view.subviews.first {
