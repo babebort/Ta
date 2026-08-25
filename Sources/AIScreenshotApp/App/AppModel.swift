@@ -117,15 +117,9 @@ final class AppModel: ObservableObject {
     }
 
     private func startAgentBridge() {
+        let capabilityService = TaAgentCapabilityService()
         let router = TaAgentRequestRouter { request in
-            .failure(
-                requestID: request.requestID,
-                error: AgentErrorPayload(
-                    code: .invalidRequest,
-                    message: "该 Agent 能力尚未接入。",
-                    retryable: false
-                )
-            )
+            await capabilityService.handle(request)
         }
         let server = TaAgentBridgeServer(
             socketURL: TaBridgeEndpoint.defaultSocketURL,

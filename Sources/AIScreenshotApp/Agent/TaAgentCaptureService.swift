@@ -72,6 +72,12 @@ struct TaAgentCaptureResult: @unchecked Sendable {
     let target: TaAgentResolvedTarget
 }
 
+struct TaAgentPreparedCapture: Equatable, Sendable {
+    let request: TaAgentResolvedCaptureRequest
+    let target: TaAgentResolvedTarget
+    let visibleBundleIdentifiers: Set<String>
+}
+
 protocol TaAgentCaptureBackend: Sendable {
     func snapshot(frontmostProcessID: pid_t?) async throws -> TaAgentCaptureSnapshot
     func capture(_ request: TaAgentResolvedCaptureRequest) async throws -> CGImage
@@ -97,15 +103,36 @@ struct TaAgentCaptureService: Sendable {
     }
 
     func capture(_ target: TaAgentCaptureTarget) async throws -> TaAgentCaptureResult {
+        let prepared = try await prepare(target)
+        return try await capture(prepared)
+    }
+
+    func prepare(_ target: TaAgentCaptureTarget) async throws -> TaAgentPreparedCapture {
         // Freeze the foreground PID before the first ScreenCaptureKit await. This
         // prevents Ta or another app transition from changing the requested target.
         let frozenProcessID = await frontmostProcessID()
         let snapshot = try await backend.snapshot(frontmostProcessID: frozenProcessID)
         let resolution = try resolve(target, snapshot: snapshot)
+        let visibleBundleIdentifiers: Set<String>
+        if let bundleIdentifier = resolution.target.bundleIdentifier {
+            visibleBundleIdentifiers = [bundleIdentifier]
+        } else {
+            visibleBundleIdentifiers = Set(snapshot.windows.compactMap { window in
+                guard window.frame.intersects(resolution.target.frame) else { return nil }
+                return window.bundleIdentifier
+            })
+        }
+        return TaAgentPreparedCapture(
+            request: resolution.request,
+            target: resolution.target,
+            visibleBundleIdentifiers: visibleBundleIdentifiers
+        )
+    }
 
+    func capture(_ prepared: TaAgentPreparedCapture) async throws -> TaAgentCaptureResult {
         do {
-            let image = try await backend.capture(resolution.request)
-            return TaAgentCaptureResult(image: image, target: resolution.target)
+            let image = try await backend.capture(prepared.request)
+            return TaAgentCaptureResult(image: image, target: prepared.target)
         } catch let error as TaAgentCaptureError {
             throw error
         } catch let error as ScreenCaptureError {
