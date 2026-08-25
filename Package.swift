@@ -17,7 +17,8 @@ let package = Package(
         .target(name: "TaAgentContracts"),
         .target(
             name: "TaAgentClient",
-            dependencies: ["TaAgentContracts"]
+            dependencies: ["TaAgentContracts"],
+            linkerSettings: [.linkedFramework("AppKit")]
         ),
         .target(
             name: "AIScreenshotCore",

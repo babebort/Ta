@@ -1,6 +1,23 @@
 import AppKit
 import Combine
 import AIScreenshotCore
+import TaAgentClient
+import TaAgentContracts
+
+enum AppLaunchMode: Equatable {
+    case normal
+    case agentBridge
+}
+
+struct AppLaunchPolicy: Equatable {
+    let mode: AppLaunchMode
+
+    init(arguments: [String]) {
+        mode = arguments.contains("--agent-bridge") ? .agentBridge : .normal
+    }
+
+    var shouldScheduleWelcome: Bool { mode == .normal }
+}
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -13,16 +30,22 @@ final class AppModel: ObservableObject {
     private let captureCoordinator = CaptureCoordinator()
     private let welcomeWindowController = WelcomeWindowController()
     private let settingsWindowController = SettingsWindowController()
+    private let launchArguments: [String]
+    private let launchPolicy: AppLaunchPolicy
     private var hasStarted = false
     private var hotKeyFailureObserver: NSObjectProtocol?
+    private var agentBridgeServer: TaAgentBridgeServer?
 
-    init() {
+    init(arguments: [String] = ProcessInfo.processInfo.arguments) {
+        launchArguments = arguments
+        launchPolicy = AppLaunchPolicy(arguments: arguments)
         Self.current = self
     }
 
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
+        startAgentBridge()
 
         do {
             try hotKeyManager.registerDefaults(
@@ -49,8 +72,10 @@ final class AppModel: ObservableObject {
 
         ConfiguredOCRService().prewarmIfNeeded()
 
-        let arguments = ProcessInfo.processInfo.arguments
-        if arguments.contains("--capture-fixed") {
+        let arguments = launchArguments
+        if launchPolicy.mode == .agentBridge {
+            return
+        } else if arguments.contains("--capture-fixed") {
             scheduleFixedCapture()
         } else if arguments.contains("--ui-smoke-capture-toolbar") {
             Task { [weak self] in
@@ -82,12 +107,35 @@ final class AppModel: ObservableObject {
             scheduleLaunchCapture(.image)
         } else if arguments.contains("--capture-pin") {
             scheduleLaunchCapture(.pin)
-        } else {
+        } else if launchPolicy.shouldScheduleWelcome {
             Task { [weak self] in
                 try? await Task.sleep(for: .milliseconds(180))
                 guard !Task.isCancelled, self?.isCapturing == false else { return }
                 self?.showWelcome()
             }
+        }
+    }
+
+    private func startAgentBridge() {
+        let router = TaAgentRequestRouter { request in
+            .failure(
+                requestID: request.requestID,
+                error: AgentErrorPayload(
+                    code: .invalidRequest,
+                    message: "该 Agent 能力尚未接入。",
+                    retryable: false
+                )
+            )
+        }
+        let server = TaAgentBridgeServer(
+            socketURL: TaBridgeEndpoint.defaultSocketURL,
+            router: router
+        )
+        do {
+            try server.start()
+            agentBridgeServer = server
+        } catch {
+            statusText = "Agent Bridge 启动失败"
         }
     }
 
