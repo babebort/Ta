@@ -1,0 +1,4 @@
+interface:
+  display_name: "拓 Ta"
+  short_description: "Capture and understand the Mac screen with Ta"
+  default_prompt: "Use $ta to capture the current app and extract the information I need."
