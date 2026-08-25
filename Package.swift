@@ -9,9 +9,11 @@ let package = Package(
     ],
     products: [
         .library(name: "AIScreenshotCore", targets: ["AIScreenshotCore"]),
+        .library(name: "TaAgentContracts", targets: ["TaAgentContracts"]),
         .executable(name: "AIScreenshotApp", targets: ["AIScreenshotApp"])
     ],
     targets: [
+        .target(name: "TaAgentContracts"),
         .target(
             name: "AIScreenshotCore",
             linkerSettings: [
@@ -32,6 +34,10 @@ let package = Package(
         .testTarget(
             name: "AIScreenshotCoreTests",
             dependencies: ["AIScreenshotCore"]
+        ),
+        .testTarget(
+            name: "TaAgentContractsTests",
+            dependencies: ["TaAgentContracts"]
         ),
         .testTarget(
             name: "AIScreenshotAppTests",
