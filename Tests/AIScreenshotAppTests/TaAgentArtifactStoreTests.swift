@@ -75,6 +75,24 @@ struct TaAgentArtifactStoreTests {
         #expect(FileManager.default.fileExists(atPath: fresh.path))
     }
 
+    @Test("clear removes all cached Agent request directories")
+    func clearAllArtifacts() async throws {
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = TaAgentArtifactStore(rootDirectory: root)
+        _ = try await store.save(
+            data: Data("one".utf8), requestID: "one", filename: "capture.png",
+            mimeType: "image/png", width: nil, height: nil
+        )
+        _ = try await store.save(
+            data: Data("two".utf8), requestID: "two", filename: "capture.png",
+            mimeType: "image/png", width: nil, height: nil
+        )
+
+        #expect(try await store.clearAll() == 2)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty)
+    }
+
     private func temporaryRoot() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("ta-agent-artifact-tests-\(UUID().uuidString)", isDirectory: true)

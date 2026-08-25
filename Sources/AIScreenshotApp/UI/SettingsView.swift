@@ -29,6 +29,7 @@ struct SettingsView: View {
                     case .recognition: RecognitionSettingsView()
                     case .translation: TranslationSettingsView()
                     case .models: ModelSettingsView()
+                    case .agent: AgentSettingsView()
                     }
                 }
                 .padding(18)
@@ -80,6 +81,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     case recognition
     case translation
     case models
+    case agent
 
     var id: String { rawValue }
 
@@ -91,6 +93,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
         case .recognition: "识别"
         case .translation: "翻译"
         case .models: "模型与 API"
+        case .agent: "Agent"
         }
     }
 
@@ -102,6 +105,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
         case .recognition: "text.viewfinder"
         case .translation: "character.book.closed"
         case .models: "sparkles"
+        case .agent: "cpu"
         }
     }
 }

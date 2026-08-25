@@ -130,6 +130,28 @@ struct TaAgentCapabilityServiceTests {
         #expect(missing.data?.objectValue?["windows"]?.arrayValue?.isEmpty == true)
     }
 
+    @Test("privacy setting changes apply to the next request without restarting the Bridge")
+    func privacyReloadsBetweenRequests() async throws {
+        let box = MutablePrivacyPolicy(.testingAllowed)
+        let fixture = try CapabilityFixture(
+            privacyPolicy: nil,
+            privacyPolicyProvider: { box.value }
+        )
+
+        #expect(await fixture.service.handle(request(.captureFrontmost)).ok)
+        box.value = TaAgentPrivacyPolicy(
+            isEnabled: false,
+            automaticCaptureAllowed: false,
+            cloudPolicy: .deny,
+            blockedBundleIdentifiers: [],
+            allowCaptureTa: false
+        )
+        let blocked = await fixture.service.handle(request(.captureFrontmost))
+
+        #expect(blocked.error?.code == .targetBlockedByPrivacyPolicy)
+        #expect(await fixture.backend.captureCount == 1)
+    }
+
     private func request(
         _ method: AgentMethod,
         params: [String: JSONValue] = [:]
@@ -149,7 +171,10 @@ private struct CapabilityFixture {
     let dependenciesProbe: CapabilityDependenciesProbe
     let service: TaAgentCapabilityService
 
-    init(privacyPolicy: TaAgentPrivacyPolicy = .testingAllowed) throws {
+    init(
+        privacyPolicy: TaAgentPrivacyPolicy? = .testingAllowed,
+        privacyPolicyProvider: @escaping @Sendable () -> TaAgentPrivacyPolicy = { .load() }
+    ) throws {
         root = FileManager.default.temporaryDirectory
             .appendingPathComponent("ta-capability-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -187,8 +212,24 @@ private struct CapabilityFixture {
             captureService: captureService,
             artifactStore: TaAgentArtifactStore(rootDirectory: root.appendingPathComponent("artifacts")),
             privacyPolicy: privacyPolicy,
+            privacyPolicyProvider: privacyPolicyProvider,
+            auditLog: nil,
             dependencies: dependencies
         )
+    }
+}
+
+private final class MutablePrivacyPolicy: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: TaAgentPrivacyPolicy
+
+    init(_ value: TaAgentPrivacyPolicy) {
+        stored = value
+    }
+
+    var value: TaAgentPrivacyPolicy {
+        get { lock.withLock { stored } }
+        set { lock.withLock { stored = newValue } }
     }
 }
 

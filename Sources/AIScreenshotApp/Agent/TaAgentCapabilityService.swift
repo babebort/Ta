@@ -88,7 +88,9 @@ actor TaAgentCapabilityService {
 
     private let captureService: TaAgentCaptureService
     private let artifactStore: TaAgentArtifactStore
-    private let privacyPolicy: TaAgentPrivacyPolicy
+    private let fixedPrivacyPolicy: TaAgentPrivacyPolicy?
+    private let privacyPolicyProvider: @Sendable () -> TaAgentPrivacyPolicy
+    private let auditLog: TaAgentAuditLog?
     private let dependencies: TaAgentCapabilityDependencies
     private var lastImage: CGImage?
     private var lastArtifact: AgentArtifact?
@@ -96,29 +98,33 @@ actor TaAgentCapabilityService {
     init(
         captureService: TaAgentCaptureService = TaAgentCaptureService(),
         artifactStore: TaAgentArtifactStore = TaAgentArtifactStore(),
-        privacyPolicy: TaAgentPrivacyPolicy = .load(),
+        privacyPolicy: TaAgentPrivacyPolicy? = nil,
+        privacyPolicyProvider: @escaping @Sendable () -> TaAgentPrivacyPolicy = { .load() },
+        auditLog: TaAgentAuditLog? = TaAgentAuditLog(),
         dependencies: TaAgentCapabilityDependencies = .live
     ) {
         self.captureService = captureService
         self.artifactStore = artifactStore
-        self.privacyPolicy = privacyPolicy
+        fixedPrivacyPolicy = privacyPolicy
+        self.privacyPolicyProvider = privacyPolicyProvider
+        self.auditLog = auditLog
         self.dependencies = dependencies
     }
 
     func handle(_ request: AgentRequestEnvelope) async -> AgentResponseEnvelope {
         let startedAt = Date()
+        let response: AgentResponseEnvelope
         do {
-            let response = try await dispatch(request)
-            return await withMetadata(response, request: request, startedAt: startedAt)
+            response = try await dispatch(request)
         } catch let failure as CapabilityFailure {
-            return .failure(requestID: request.requestID, error: failure.payload)
+            response = .failure(requestID: request.requestID, error: failure.payload)
         } catch is CancellationError {
-            return .failure(
+            response = .failure(
                 requestID: request.requestID,
                 error: AgentErrorPayload(code: .cancelled, message: "Agent 请求已取消。", retryable: false)
             )
         } catch {
-            return .failure(
+            response = .failure(
                 requestID: request.requestID,
                 error: AgentErrorPayload(
                     code: .internalError,
@@ -127,6 +133,15 @@ actor TaAgentCapabilityService {
                 )
             )
         }
+        let completed = await withMetadata(response, request: request, startedAt: startedAt)
+        if let auditLog {
+            try? await auditLog.record(request: request, response: completed, occurredAt: startedAt)
+        }
+        return completed
+    }
+
+    private var privacyPolicy: TaAgentPrivacyPolicy {
+        fixedPrivacyPolicy ?? privacyPolicyProvider()
     }
 
     private func dispatch(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
@@ -466,9 +481,10 @@ actor TaAgentCapabilityService {
         let usedCloud: Bool
         switch request.method {
         case .analyzeImage, .translateText, .translateImage:
-            usedCloud = true
+            usedCloud = response.ok
         case .recognizeOCR:
-            usedCloud = await dependencies.ocrEngine() == .deepSeekOCR2
+            let engine = await dependencies.ocrEngine()
+            usedCloud = response.ok && engine == .deepSeekOCR2
         default:
             usedCloud = false
         }

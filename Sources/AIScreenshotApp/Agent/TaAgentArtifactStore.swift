@@ -82,6 +82,20 @@ actor TaAgentArtifactStore {
         return removed
     }
 
+    func clearAll() throws -> Int {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: rootDirectory.path) else { return 0 }
+        let children = try fileManager.contentsOfDirectory(
+            at: rootDirectory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        for child in children {
+            try fileManager.removeItem(at: child)
+        }
+        return children.count
+    }
+
     private static func validatePathComponent(_ value: String) throws {
         let pattern = "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
         guard value.range(of: pattern, options: .regularExpression) != nil,
@@ -98,4 +112,3 @@ actor TaAgentArtifactStore {
             .appendingPathComponent("AgentRuns", isDirectory: true)
     }
 }
-

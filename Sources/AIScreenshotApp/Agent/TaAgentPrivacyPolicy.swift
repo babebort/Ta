@@ -1,6 +1,14 @@
 import Foundation
 import TaAgentContracts
 
+enum TaAgentPreferenceKey {
+    static let accessEnabled = "agentAccessEnabled"
+    static let automaticCaptureAllowed = "agentAutomaticCaptureAllowed"
+    static let cloudPolicy = "agentCloudPolicy"
+    static let privacyDenylist = "agentPrivacyDenylist"
+    static let allowCaptureTa = "agentAllowCaptureTa"
+}
+
 struct TaAgentPrivacyPolicy: Equatable, Sendable {
     static let taBundleIdentifier = "com.kangarooking.AIScreenshot"
 
@@ -25,21 +33,21 @@ struct TaAgentPrivacyPolicy: Equatable, Sendable {
     }
 
     static func load(defaults: UserDefaults = .standard) -> TaAgentPrivacyPolicy {
-        let enabled = defaults.object(forKey: "agentAccessEnabled") == nil
+        let enabled = defaults.object(forKey: TaAgentPreferenceKey.accessEnabled) == nil
             ? true
-            : defaults.bool(forKey: "agentAccessEnabled")
-        let captureAllowed = defaults.object(forKey: "agentAutomaticCaptureAllowed") == nil
+            : defaults.bool(forKey: TaAgentPreferenceKey.accessEnabled)
+        let captureAllowed = defaults.object(forKey: TaAgentPreferenceKey.automaticCaptureAllowed) == nil
             ? true
-            : defaults.bool(forKey: "agentAutomaticCaptureAllowed")
-        let cloudRaw = defaults.string(forKey: "agentCloudPolicy") ?? AgentCloudPolicy.auto.rawValue
-        let denylist = defaults.string(forKey: "agentPrivacyDenylist") ?? ""
+            : defaults.bool(forKey: TaAgentPreferenceKey.automaticCaptureAllowed)
+        let cloudRaw = defaults.string(forKey: TaAgentPreferenceKey.cloudPolicy) ?? AgentCloudPolicy.auto.rawValue
+        let denylist = defaults.string(forKey: TaAgentPreferenceKey.privacyDenylist) ?? ""
         let blocked = Set(denylist
             .components(separatedBy: CharacterSet(charactersIn: ",;\n"))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty })
-        let allowTa = defaults.object(forKey: "agentAllowCaptureTa") == nil
+        let allowTa = defaults.object(forKey: TaAgentPreferenceKey.allowCaptureTa) == nil
             ? true
-            : defaults.bool(forKey: "agentAllowCaptureTa")
+            : defaults.bool(forKey: TaAgentPreferenceKey.allowCaptureTa)
         return TaAgentPrivacyPolicy(
             isEnabled: enabled,
             automaticCaptureAllowed: captureAllowed,
