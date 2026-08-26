@@ -55,6 +55,78 @@ struct TaAgentCapabilityServiceTests {
         #expect(FileManager.default.fileExists(atPath: outputURL.path))
     }
 
+    @Test("capabilities advertise local image transforms")
+    func capabilitiesAdvertiseTransform() async throws {
+        let fixture = try CapabilityFixture()
+
+        let response = await fixture.service.handle(request(.systemCapabilities))
+
+        #expect(response.ok)
+        #expect(response.data?.objectValue?["methods"]?.arrayValue?.contains(.string("transform.image")) == true)
+    }
+
+    @Test("transform applies recipes and returns local artifacts with undo and redo")
+    func transformApplyUndoRedo() async throws {
+        let fixture = try CapabilityFixture()
+        _ = await fixture.service.handle(request(.captureFrontmost))
+        let recipe = AnnotationRecipe(version: 1, operations: [
+            .rectangle(.init(id: "focus", rect: .init(x: 0, y: 0, width: 3, height: 2), lineWidth: 1))
+        ])
+        let recipeJSON = String(decoding: try AgentJSONCoding.encoder().encode(recipe), as: UTF8.self)
+
+        let applied = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("apply"), "recipe": .string(recipeJSON)]
+        ))
+        #expect(applied.ok)
+        #expect(applied.meta?.cloudUploaded == false)
+        #expect(applied.artifacts.first?.mimeType == "image/png")
+        #expect(applied.data?.objectValue?["elementCount"] == .integer(1))
+        #expect(applied.data?.objectValue?["canUndo"] == .bool(true))
+
+        let undone = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("undo")]
+        ))
+        #expect(undone.ok)
+        #expect(undone.data?.objectValue?["elementCount"] == .integer(0))
+        #expect(undone.data?.objectValue?["canRedo"] == .bool(true))
+
+        let redone = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("redo")]
+        ))
+        #expect(redone.ok)
+        #expect(redone.data?.objectValue?["elementCount"] == .integer(1))
+    }
+
+    @Test("invalid transform recipes do not mutate the current edit session")
+    func invalidTransformIsAtomic() async throws {
+        let fixture = try CapabilityFixture()
+        _ = await fixture.service.handle(request(.captureFrontmost))
+        let valid = AnnotationRecipe(version: 1, operations: [
+            .rectangle(.init(id: "focus", rect: .init(x: 0, y: 0, width: 3, height: 2), lineWidth: 1))
+        ])
+        let validJSON = String(decoding: try AgentJSONCoding.encoder().encode(valid), as: UTF8.self)
+        _ = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("apply"), "recipe": .string(validJSON)]
+        ))
+
+        let invalid = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("apply"), "recipe": .string(#"{"version":1,"operations":[{"type":"eraser","targetIds":["missing"]}]}"#)]
+        ))
+        #expect(invalid.error?.code == .invalidRequest)
+
+        let undone = await fixture.service.handle(request(
+            .transformImage,
+            params: ["action": .string("undo")]
+        ))
+        #expect(undone.ok)
+        #expect(undone.data?.objectValue?["elementCount"] == .integer(0))
+    }
+
     @Test("privacy denylist blocks capture before pixels are requested")
     func privacyDenylist() async throws {
         let fixture = try CapabilityFixture(

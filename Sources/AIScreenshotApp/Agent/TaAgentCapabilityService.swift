@@ -83,6 +83,7 @@ actor TaAgentCapabilityService {
         .targetListDisplays, .targetListWindows,
         .captureDisplay, .captureFrontmost, .captureWindow, .captureRegion,
         .recognizeOCR, .analyzeImage, .translateText, .translateImage,
+        .transformImage,
         .deliverCopy, .deliverSave
     ]
 
@@ -94,6 +95,7 @@ actor TaAgentCapabilityService {
     private let dependencies: TaAgentCapabilityDependencies
     private var lastImage: CGImage?
     private var lastArtifact: AgentArtifact?
+    private var annotationSession: TaAgentAnnotationSession?
 
     init(
         captureService: TaAgentCaptureService = TaAgentCaptureService(),
@@ -177,6 +179,8 @@ actor TaAgentCapabilityService {
             return try await translateText(request)
         case .translateImage:
             return try await translateImage(request)
+        case .transformImage:
+            return try await transformImage(request)
         case .deliverCopy:
             return try await copy(request)
         case .deliverSave:
@@ -299,6 +303,7 @@ actor TaAgentCapabilityService {
         )
         lastImage = result.image
         lastArtifact = artifact
+        annotationSession = nil
         return .success(
             requestID: request.requestID,
             data: .object(["target": targetJSON(result.target)]),
@@ -363,6 +368,76 @@ actor TaAgentCapabilityService {
         try await ensureTranslationAllowed(request)
         let translated = try await dependencies.translateImage(try loadImage(request))
         return .success(requestID: request.requestID, data: .object(["text": .string(translated)]))
+    }
+
+    private func transformImage(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
+        let action = request.params.string("action") ?? "apply"
+        var candidate: TaAgentAnnotationSession
+
+        if action == "apply", request.params.string("inputPath") != nil {
+            candidate = TaAgentAnnotationSession(sourceImage: try loadImage(request))
+        } else if let annotationSession {
+            candidate = annotationSession
+        } else if action == "apply", let lastImage {
+            candidate = TaAgentAnnotationSession(sourceImage: lastImage)
+        } else {
+            throw invalid("没有可用的标注编辑会话，请先截图或传入图片路径。")
+        }
+
+        let result: TaAgentAnnotationRenderResult
+        do {
+            switch action {
+            case "apply":
+                guard let recipeJSON = request.params.string("recipe"), !recipeJSON.isEmpty else {
+                    throw invalid("transform.image apply 需要非空 recipe JSON。")
+                }
+                let recipe: AnnotationRecipe
+                do {
+                    recipe = try AgentJSONCoding.decoder().decode(
+                        AnnotationRecipe.self,
+                        from: Data(recipeJSON.utf8)
+                    )
+                } catch {
+                    throw invalid("无法解析标注配方：\(error.localizedDescription)")
+                }
+                result = try candidate.apply(recipe)
+            case "undo":
+                result = try candidate.undo()
+            case "redo":
+                result = try candidate.redo()
+            default:
+                throw invalid("transform.image action 只支持 apply、undo 或 redo。")
+            }
+        } catch let failure as CapabilityFailure {
+            throw failure
+        } catch {
+            throw invalid(error.localizedDescription)
+        }
+
+        let png = try Self.pngData(result.image)
+        let artifact = try await artifactStore.save(
+            data: png,
+            requestID: request.requestID,
+            filename: "transformed.png",
+            mimeType: "image/png",
+            width: result.image.width,
+            height: result.image.height
+        )
+        annotationSession = candidate
+        lastImage = result.image
+        lastArtifact = artifact
+        return .success(
+            requestID: request.requestID,
+            data: .object([
+                "action": .string(action),
+                "width": .integer(Int64(result.image.width)),
+                "height": .integer(Int64(result.image.height)),
+                "elementCount": .integer(Int64(result.elementCount)),
+                "canUndo": .bool(result.canUndo),
+                "canRedo": .bool(result.canRedo)
+            ]),
+            artifacts: [artifact]
+        )
     }
 
     private func copy(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
