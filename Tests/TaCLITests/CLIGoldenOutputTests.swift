@@ -36,4 +36,55 @@ struct CLIGoldenOutputTests {
         #expect(rendered.contains("打开拓的权限设置"))
         #expect(CLIExitCode.forResponse(response) == .permissionDenied)
     }
+
+    @Test("transform human output includes history and artifact details")
+    func transformHumanOutput() throws {
+        let response = AgentResponseEnvelope.success(
+            requestID: "transform-1",
+            data: .object([
+                "action": .string("apply"),
+                "elementCount": .integer(3),
+                "canUndo": .bool(true),
+                "canRedo": .bool(false)
+            ]),
+            artifacts: [AgentArtifact(
+                id: "artifact-1",
+                path: "/tmp/transformed.png",
+                mimeType: "image/png",
+                width: 800,
+                height: 600,
+                bytes: 42,
+                sha256: "abc",
+                expiresAt: Date(timeIntervalSince1970: 60)
+            )]
+        )
+
+        let rendered = try CLIOutput.render(response, format: .human)
+        #expect(rendered.contains("elementCount: 3"))
+        #expect(rendered.contains("canUndo: 是"))
+        #expect(rendered.contains("transformed.png"))
+        #expect(rendered.contains("800×600"))
+    }
+
+    @Test("runner loads recipe contents and removes local path before Bridge send")
+    func runnerLoadsRecipe() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ta-cli-recipe-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recipeURL = directory.appendingPathComponent("recipe.json")
+        let recipe = #"{"version":1,"operations":[{"type":"crop","rect":{"x":0,"y":0,"width":10,"height":10}}]}"#
+        try Data(recipe.utf8).write(to: recipeURL)
+
+        let params = try CLIRunner.preparedParameters(
+            method: .transformImage,
+            params: [
+                "action": .string("apply"),
+                "recipePath": .string(recipeURL.path)
+            ]
+        )
+
+        #expect(params["recipe"] == .string(recipe))
+        #expect(params["recipePath"] == nil)
+    }
 }

@@ -14,9 +14,10 @@ struct CLIRunner: Sendable {
     func execute(_ invocation: CLIInvocation) async throws -> AgentResponseEnvelope {
         switch invocation.action {
         case .request(let method, let params):
+            let preparedParams = try Self.preparedParameters(method: method, params: params)
             let response = try await send(
                 method: method,
-                params: params,
+                params: preparedParams,
                 invocation: invocation,
                 requestIDSuffix: nil
             )
@@ -51,6 +52,32 @@ struct CLIRunner: Sendable {
                 requestIDSuffix: "translate"
             )
         }
+    }
+
+    static func preparedParameters(
+        method: AgentMethod,
+        params: [String: JSONValue]
+    ) throws -> [String: JSONValue] {
+        guard method == .transformImage,
+              params["action"] == .string("apply") else { return params }
+        guard case .string(let path) = params["recipePath"], !path.isEmpty else {
+            throw CLIRecipeError.missingPath
+        }
+        let url = URL(fileURLWithPath: path).standardizedFileURL
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw CLIRecipeError.unreadable(path: url.path, underlying: error.localizedDescription)
+        }
+        guard let recipe = String(data: data, encoding: .utf8),
+              !recipe.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CLIRecipeError.invalidUTF8(path: url.path)
+        }
+        var prepared = params
+        prepared.removeValue(forKey: "recipePath")
+        prepared["recipe"] = .string(recipe)
+        return prepared
     }
 
     private func send(
@@ -132,5 +159,22 @@ struct CLIRunner: Sendable {
             return URL(fileURLWithPath: path).standardizedFileURL
         }
         return TaAppLauncher.defaultApplicationURL
+    }
+}
+
+private enum CLIRecipeError: Error, LocalizedError {
+    case missingPath
+    case unreadable(path: String, underlying: String)
+    case invalidUTF8(path: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingPath:
+            "transform 缺少本地 recipePath。"
+        case .unreadable(let path, let underlying):
+            "无法读取标注配方 \(path)：\(underlying)"
+        case .invalidUTF8(let path):
+            "标注配方必须是非空 UTF-8 JSON：\(path)"
+        }
     }
 }

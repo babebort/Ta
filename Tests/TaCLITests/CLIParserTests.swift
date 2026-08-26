@@ -66,4 +66,52 @@ struct CLIParserTests {
             _ = try CLIParser.parse(["save", "last"])
         }
     }
+
+    @Test("transform parses last image, recipe, and durable output")
+    func transformLast() throws {
+        let invocation = try CLIParser.parse([
+            "transform", "last",
+            "--recipe", "./annotations.json",
+            "--output", "/tmp/ta-marked.png",
+            "--json"
+        ])
+
+        #expect(invocation.action == .request(.transformImage, [
+            "action": .string("apply"),
+            "recipePath": .string(URL(fileURLWithPath: "./annotations.json").standardizedFileURL.path)
+        ]))
+        #expect(invocation.outputPath == "/tmp/ta-marked.png")
+    }
+
+    @Test("transform accepts explicit image paths")
+    func transformImagePath() throws {
+        let invocation = try CLIParser.parse([
+            "transform", "./input.png", "--recipe", "./annotations.json"
+        ])
+
+        #expect(invocation.action == .request(.transformImage, [
+            "action": .string("apply"),
+            "inputPath": .string(URL(fileURLWithPath: "./input.png").standardizedFileURL.path),
+            "recipePath": .string(URL(fileURLWithPath: "./annotations.json").standardizedFileURL.path)
+        ]))
+    }
+
+    @Test("transform undo and redo map to history actions")
+    func transformHistory() throws {
+        #expect(try CLIParser.parse(["transform", "undo"]).action == .request(
+            .transformImage,
+            ["action": .string("undo")]
+        ))
+        #expect(try CLIParser.parse(["transform", "redo"]).action == .request(
+            .transformImage,
+            ["action": .string("redo")]
+        ))
+    }
+
+    @Test("transform apply requires a recipe")
+    func transformRequiresRecipe() {
+        #expect(throws: CLIParseError.self) {
+            _ = try CLIParser.parse(["transform", "last"])
+        }
+    }
 }

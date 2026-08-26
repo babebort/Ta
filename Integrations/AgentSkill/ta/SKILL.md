@@ -1,6 +1,6 @@
 ---
 name: ta
-description: Use the Ta macOS app and ta CLI to capture displays, foreground apps, windows, or known regions without taking focus, then run OCR, image understanding, translation, copy, or save workflows. Use when an Agent needs to see or extract information from the user's screen; do not use it as a general mouse-and-keyboard automation tool.
+description: Use the Ta macOS app and ta CLI to capture displays, foreground apps, windows, or known regions without taking focus, then annotate, OCR, understand, translate, copy, or save images. Use when an Agent needs visual input or deterministic screenshot markup; do not use it as a general mouse-and-keyboard automation tool.
 ---
 
 # Ta Screen Intelligence
@@ -24,7 +24,8 @@ If the check fails, follow [references/error-codes.md](references/error-codes.md
 - Understand semantics, code, tables, or formulas: use `ta analyze` only when OCR is insufficient. This may use the configured cloud model.
 - Translate visible content: choose text translation for a textual result or image translation for a rendered translated image. Read [references/image-understanding.md](references/image-understanding.md).
 - Copy or save a result: do so only when the request calls for changing the clipboard or filesystem. Read [references/commands.md](references/commands.md).
-- Edit, beautify, annotate, redact, pin, or long-capture: check `ta capabilities --json` first. The current Bridge v1 CLI does not expose these methods; never invent a command. Read [references/editing-recipes.md](references/editing-recipes.md).
+- Annotate an image reproducibly: use `ta transform ... --recipe <JSON>` and keep stable IDs for later erasing. The transform is local and returns a new PNG Artifact. Read [references/editing-recipes.md](references/editing-recipes.md).
+- Beautify, redact, pin, or long-capture: check `ta capabilities --json` first. Do not invent methods absent from the returned list.
 
 ## Privacy boundary
 

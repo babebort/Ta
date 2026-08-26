@@ -65,8 +65,21 @@ ta save last --output /absolute/path/result.png --json
 
 Copy mutates the user's clipboard. Save requires an explicit absolute destination. Never overwrite an existing user file unless the user requested that exact path.
 
+## Annotate and transform
+
+```bash
+ta transform last --recipe /absolute/path/annotations.json --output /absolute/path/marked.png --json
+ta transform /absolute/path/input.png --recipe /absolute/path/annotations.json --json
+ta transform undo --output /absolute/path/previous.png --json
+ta transform redo --output /absolute/path/restored.png --json
+```
+
+The CLI reads the local UTF-8 recipe and sends its contents—not the recipe path—to the Bridge. `last` uses the current Bridge image and edit session. An explicit input path starts a new edit session. Every successful command returns a new temporary PNG Artifact; `--output` additionally saves a durable copy.
+
+Annotation transforms are local-only. Confirm `meta.cloudUploaded` is `false`, `artifacts` is non-empty, and `data.canUndo` / `data.canRedo` match the expected history state. See [editing-recipes.md](editing-recipes.md) for the versioned schema.
+
 ## Response contract
 
-Success requires top-level `ok: true`. Image-producing success also requires at least one artifact with `path`, `mimeType`, `bytes`, `sha256`, and expiry metadata. `meta.cloudUploaded` is the authoritative disclosure for cloud usage.
+Success requires top-level `ok: true`. Image-producing success also requires at least one artifact with `path`, `mimeType`, `bytes`, `sha256`, and expiry metadata. `meta.cloudUploaded` is the authoritative disclosure for cloud usage. A successful transform also returns `width`, `height`, `elementCount`, `canUndo`, and `canRedo`.
 
 Exit codes: `0` success, `2` usage, `3` app missing, `4` bridge unavailable, `5` permission denied, `6` privacy/cloud blocked, `7` request failure, `130` cancelled.

@@ -105,4 +105,20 @@ struct AnnotationRecipeTests {
             _ = try recipe.validated(existingElementIDs: [])
         }
     }
+
+    @Test("checked-in v1 fixture decodes and validates")
+    func fixtureValidates() throws {
+        let fixtureURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/annotation-recipe-v1.json")
+        let recipe = try AgentJSONCoding.decoder().decode(
+            AnnotationRecipe.self,
+            from: Data(contentsOf: fixtureURL)
+        )
+
+        let validated = try recipe.validated()
+        #expect(validated.operations.count == 14)
+        #expect(validated.resultingElementIDs.count == 11)
+    }
 }

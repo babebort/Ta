@@ -1,6 +1,6 @@
 # 让 Agent 使用拓：Skill、CLI 与 DeepSeek Harness 插件
 
-拓可以作为 Agent 的视觉输入层，在不接管鼠标键盘的前提下完成截图、OCR、AI 识图、翻译和结果交付。三种适配器共用同一个由「拓.app」托管的本机 Bridge，因此 macOS 权限、模型配置和 API Key 只需要在拓里管理一次。
+拓可以作为 Agent 的视觉输入层，在不接管鼠标键盘的前提下完成截图、确定性标注、OCR、AI 识图、翻译和结果交付。三种适配器共用同一个由「拓.app」托管的本机 Bridge，因此 macOS 权限、模型配置和 API Key 只需要在拓里管理一次。
 
 ```text
 Agent Skill ──> ta CLI ─────────────┐
@@ -68,6 +68,13 @@ ta translate text --text "Hello from Ta" --cloud auto --json
 
 # 保存最近图片到明确的绝对路径
 ta save last --output "$PWD/ta-capture.png" --json
+
+# 按 JSON 配方添加箭头、文字等标注；全程本地执行
+ta transform last --recipe "$PWD/annotations.json" --output "$PWD/marked.png" --json
+
+# 撤销或重做上一条标注配方
+ta transform undo --json
+ta transform redo --json
 ```
 
 Agent 应始终检查 JSON 顶层的 `ok`。图片命令还必须确认 `artifacts` 非空；不能仅根据命令已经发出就宣称成功。
@@ -164,9 +171,12 @@ dsh plugin --profile web remove dsh-ta
 - 显示器与窗口发现；
 - 显示器、前台窗口、指定窗口和已知坐标区域截图；
 - OCR、AI 识图、文字翻译和图片翻译；
+- JSON Recipe v1 标注变换、稳定 ID 擦除以及 100 步撤销/重做；
 - 复制与保存。
 
-拓 App 已有但 Bridge v1 尚未开放的能力包括：交互框选、长截图、钉图、标注和 AI 美化。Agent 必须先检查 `ta capabilities --json`，不得虚构不存在的命令。后续版本会继续按 `Capture → Understand → Transform → Deliver` 顺序扩展 Bridge，而不是在每个适配器中复制一套实现。
+标注变换支持裁剪、矩形、圆形、箭头、画笔、高亮、文字、编号、矩形/笔刷马赛克、模糊、按 ID 擦除和放大镜。它使用左上角像素坐标、只在本机渲染，每次成功调用都会返回新的 PNG Artifact。
+
+拓 App 已有但 Bridge v1 尚未开放的能力包括：交互框选、长截图、钉图、交互式标注编辑器和 AI 美化。Agent 必须先检查 `ta capabilities --json`，不得虚构不存在的命令。后续版本会继续按 `Capture → Understand → Transform → Deliver` 顺序扩展 Bridge，而不是在每个适配器中复制一套实现。
 
 ## 7. 故障排查
 

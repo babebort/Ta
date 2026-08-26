@@ -41,6 +41,8 @@ enum CLIParser {
       ta analyze [last|图片路径] [--task general|extractText|explainCode|tableMarkdown|formulaLaTeX]
       ta translate [last|图片路径] --mode text|image [--cloud auto|allow|deny]
       ta translate text --text <内容> [--cloud auto|allow|deny]
+      ta transform [last|图片路径] --recipe <JSON> [--output <PNG>] [--json]
+      ta transform undo|redo [--output <PNG>] [--json]
       ta copy [last|图片路径] | --text <内容>
       ta save [last|图片路径] --output <PNG>
 
@@ -126,6 +128,8 @@ enum CLIParser {
             return .request(.analyzeImage, params)
         case "translate":
             return try parseTranslate(&arguments, params: params)
+        case "transform":
+            return try parseTransform(&arguments, params: params)
         case "copy":
             if let text = try removeOption("--text", from: &arguments) {
                 params["text"] = .string(text)
@@ -207,6 +211,28 @@ enum CLIParser {
         case "image": return .request(.translateImage, params)
         default: throw CLIParseError(message: "--mode 只支持 text 或 image。")
         }
+    }
+
+    private static func parseTransform(
+        _ arguments: inout [String],
+        params initialParams: [String: JSONValue]
+    ) throws -> CLIAction {
+        var params = initialParams
+        if let action = arguments.first, action == "undo" || action == "redo" {
+            arguments.removeFirst()
+            params["action"] = .string(action)
+            return .request(.transformImage, params)
+        }
+
+        try addImageInput(from: &arguments, to: &params)
+        guard let recipePath = try removeOption("--recipe", from: &arguments) else {
+            throw CLIParseError(message: "transform 需要 --recipe <JSON 文件>。")
+        }
+        params["action"] = .string("apply")
+        params["recipePath"] = .string(
+            URL(fileURLWithPath: recipePath).standardizedFileURL.path
+        )
+        return .request(.transformImage, params)
     }
 
     private static func addImageInput(
