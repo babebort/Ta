@@ -334,6 +334,10 @@ WeChat Official Account「袋鼠帝 AI 客栈」QR code:
 
 ![](https://raw.githubusercontent.com/kangarooking/cangjie-skill/main/assets/kangarooking-gzh.png)
 
+To share Ta workflows, report screenshot pain points, or help build an AI-native screenshot tool, join the Ta WeCom community:
+
+<img src="https://raw.githubusercontent.com/kangarooking/Ta/main/assets/wecom-ta-group-qr.png" width="220" alt="Ta WeCom community QR code">
+
 ## ⭐ Star History
 
 If Ta helps you, consider giving the project a Star.
