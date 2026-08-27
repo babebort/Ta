@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ta Long Capture Manual Fixture</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #24211d; background: #faf6ee; font: 16px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; }
+    header, footer { position: sticky; z-index: 3; padding: 14px 24px; color: white; background: #1a1a1a; }
+    header { top: 0; }
+    footer { bottom: 0; }
+    main { width: min(820px, calc(100% - 48px)); margin: 20px auto; }
+    .row { min-height: 116px; margin: 12px 0; padding: 18px 22px; border: 1px solid #e6ddd0; border-radius: 14px; background: white; }
+    .row strong { color: #d6402f; }
+    .pulse { position: fixed; right: 22px; top: 92px; width: 84px; height: 84px; border-radius: 18px; background: #d6402f; animation: pulse 0.55s infinite alternate; }
+    @keyframes pulse { from { opacity: .24; transform: scale(.86); } to { opacity: .75; transform: scale(1); } }
+  </style>
+</head>
+<body>
+  <header>固定顶栏 · 应在拼接时自动忽略</header>
+  <div class="pulse" aria-hidden="true"></div>
+  <main id="rows"></main>
+  <footer>固定底栏 · 应在拼接时自动忽略</footer>
+  <script>
+    const root = document.querySelector('#rows');
+    for (let index = 1; index <= 60; index += 1) {
+      const row = document.createElement('section');
+      row.className = 'row';
+      row.innerHTML = `<strong>唯一段落 ${String(index).padStart(2, '0')}</strong><br>这是一段用于检查长截图顺序、重复、吞字和提前停止的测试文本。标识 TA-LONG-${String(index).padStart(2, '0')}.`;
+      root.appendChild(row);
+    }
+  </script>
+</body>
+</html>

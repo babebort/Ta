@@ -12,6 +12,11 @@ xcuserdata/
 *.log
 artifacts/
 
+# Local capture/article working files (not release documentation)
+/0[1-8]-*.png
+/ocr_crops/
+/拓-图文介绍.md
+
 # Local OCR pack outputs and model caches
 ocr-packs/**/.venv/
 ocr-packs/**/__pycache__/

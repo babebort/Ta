@@ -6,15 +6,25 @@ final class ResultBarController {
     private var panel: NSPanel?
     private var dismissalTask: Task<Void, Never>?
 
-    func show(_ state: ResultBarState, autoHide: Bool) {
+    func show(
+        _ state: ResultBarState,
+        autoHide: Bool,
+        dismissalOverrideSeconds: Double? = nil
+    ) {
         dismissalTask?.cancel()
 
         let panel = panel ?? makePanel()
-        panel.contentView = NSHostingView(
+        let width = ResultBarLayout.preferredWidth(for: state)
+        panel.setContentSize(CGSize(width: width, height: ResultBarLayout.height))
+        let hostingView = NSHostingView(
             rootView: ResultBarView(state: state) { [weak self] in
                 self?.hide()
             }
         )
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
+        hostingView.layer?.isOpaque = false
+        panel.contentView = hostingView
         position(panel)
         panel.orderFrontRegardless()
         self.panel = panel
@@ -25,7 +35,8 @@ final class ResultBarController {
         guard autoHide || state.kind != .processing else { return }
         let duration = UserDefaults.standard.double(forKey: "resultBarDuration")
         let preferredSeconds = duration > 0 ? duration : 3
-        let seconds = autoHide ? preferredSeconds : max(preferredSeconds, 6)
+        let seconds = dismissalOverrideSeconds
+            ?? (autoHide ? preferredSeconds : max(preferredSeconds, 6))
         dismissalTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
@@ -41,7 +52,12 @@ final class ResultBarController {
 
     private func makePanel() -> NSPanel {
         let panel = NSPanel(
-            contentRect: CGRect(x: 0, y: 0, width: 390, height: 54),
+            contentRect: CGRect(
+                x: 0,
+                y: 0,
+                width: ResultBarLayout.minimumWidth,
+                height: ResultBarLayout.height
+            ),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false

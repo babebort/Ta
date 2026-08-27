@@ -38,6 +38,9 @@ struct SettingsView: View {
         .frame(width: 780, height: 600)
         .accentColor(TaPalette.cinnabar)
         .tint(TaPalette.cinnabar)
+        .onReceive(NotificationCenter.default.publisher(for: .openAIModelSettings)) { _ in
+            withAnimation(.easeOut(duration: 0.16)) { selectedTab = .models }
+        }
     }
 
     private func settingsTabButton(_ tab: SettingsTab) -> some View {
@@ -75,6 +78,10 @@ struct SettingsView: View {
     }
 }
 
+extension Notification.Name {
+    static let openAIModelSettings = Notification.Name("Ta.OpenAIModelSettings")
+}
+
 private enum SettingsTab: String, CaseIterable, Identifiable {
     case permissions
     case general
@@ -93,7 +100,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
         case .hotKeys: "快捷键"
         case .recognition: "识别"
         case .translation: "翻译"
-        case .models: "模型与 API"
+        case .models: "AI 模型"
         case .agent: "Agent"
         }
     }

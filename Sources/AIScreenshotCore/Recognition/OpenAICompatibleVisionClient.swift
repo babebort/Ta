@@ -6,6 +6,7 @@ public enum VisionClientError: LocalizedError, Equatable {
     case missingAPIKey
     case invalidResponse
     case emptyResponse
+    case reasoningOnlyOutput(truncated: Bool)
     case server(statusCode: Int, message: String)
 
     public var errorDescription: String? {
@@ -15,6 +16,10 @@ public enum VisionClientError: LocalizedError, Equatable {
         case .missingAPIKey: "尚未配置 API Key。"
         case .invalidResponse: "模型服务返回了无法解析的响应。"
         case .emptyResponse: "模型没有返回识别内容。"
+        case .reasoningOnlyOutput(let truncated):
+            truncated
+                ? "识别失败：输出上限被思考过程耗尽，还没生成正文就被截断了。请关闭该模型的深度思考，或调大输出上限后重试。"
+                : "模型只返回了思考过程，没有识别正文。请关闭深度思考后重试。"
         case .server(let statusCode, let message): "模型服务错误（\(statusCode)）：\(message)"
         }
     }
@@ -48,7 +53,7 @@ public struct OpenAICompatibleVisionClient: @unchecked Sendable {
         request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
 
         let dataURL = "data:\(mimeType);base64,\(imageData.base64EncodedString())"
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": trimmedModel,
             "messages": [[
                 "role": "user",
@@ -58,8 +63,9 @@ public struct OpenAICompatibleVisionClient: @unchecked Sendable {
                 ]
             ]],
             "temperature": 0,
-            "max_tokens": 2048
+            "max_tokens": 4096
         ]
+        OpenAIChatResponseSupport.applyThinkingPreference(to: &body, host: endpoint.host)
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await session.data(for: request)
@@ -77,6 +83,12 @@ public struct OpenAICompatibleVisionClient: @unchecked Sendable {
               let message = choices.first?["message"] as? [String: Any],
               let text = responseText(from: message["content"]),
               !text.isEmpty else {
+            if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               OpenAIChatResponseSupport.reasoningText(in: object)?.isEmpty == false {
+                throw VisionClientError.reasoningOnlyOutput(
+                    truncated: OpenAIChatResponseSupport.isLengthTruncated(object)
+                )
+            }
             throw VisionClientError.emptyResponse
         }
         return text

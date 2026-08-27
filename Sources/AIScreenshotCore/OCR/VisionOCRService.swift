@@ -11,12 +11,35 @@ public struct VisionOCRService: Sendable {
         mergeWrappedLines: Bool
     ) async throws -> OCRResult {
         if #available(macOS 26.0, *) {
-            return try await recognizeDocument(
-                image: image,
-                languages: languages,
-                mergeWrappedLines: mergeWrappedLines
+            return try await VisionOCRFallbackRunner().run(
+                document: {
+                    try await recognizeDocument(
+                        image: image,
+                        languages: languages,
+                        mergeWrappedLines: mergeWrappedLines
+                    )
+                },
+                legacy: {
+                    try await recognizeLegacy(
+                        image: image,
+                        languages: languages,
+                        mergeWrappedLines: mergeWrappedLines
+                    )
+                }
             )
         }
+        return try await recognizeLegacy(
+            image: image,
+            languages: languages,
+            mergeWrappedLines: mergeWrappedLines
+        )
+    }
+
+    private func recognizeLegacy(
+        image: CGImage,
+        languages: [String],
+        mergeWrappedLines: Bool
+    ) async throws -> OCRResult {
         return try await Task.detached(priority: .userInitiated) {
             let request = VNRecognizeTextRequest()
             request.recognitionLevel = .accurate
@@ -169,5 +192,21 @@ public struct VisionOCRService: Sendable {
             document: layout,
             barcodes: barcodes
         )
+    }
+}
+
+struct VisionOCRFallbackRunner {
+    func run(
+        document: () async throws -> OCRResult,
+        legacy: () async throws -> OCRResult
+    ) async throws -> OCRResult {
+        do {
+            return try await document()
+        } catch let error as CancellationError {
+            throw error
+        } catch {
+            try Task.checkCancellation()
+            return try await legacy()
+        }
     }
 }

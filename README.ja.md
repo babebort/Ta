@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
-[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.0)
+[![Release: v1.0.1](https://img.shields.io/badge/Release-v1.0.1-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.1)
 
 **キャプチャ、OCR、AI 画像理解、翻訳、スクロールキャプチャ、ピン留め、注釈を一つの流れにまとめた AI ネイティブ・スクリーンショットツールです。**
 
@@ -171,7 +171,7 @@ ScreenCaptureKit で撮影（Ta 自身のウインドウは除外）
 
 ### ダウンロード
 
-[**Ta v1.0.0 をダウンロード（macOS Universal DMG）**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.0-macOS-universal.dmg)
+[**Ta v1.0.1 をダウンロード（macOS Universal DMG）**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.1-macOS-universal.dmg)
 
 Apple Silicon と Intel Mac の両方に対応しています。DMG を開き、「拓」を `Applications` へドラッグしてください。現在のビルドは Apple notarization 未完了のため、初回起動時は Finder で Control キーを押しながらアプリをクリックし、「開く」を選んでもう一度確認してください。
 
@@ -209,6 +209,14 @@ Ta は Agent の視覚入力レイヤーとして、次の三つの形で利用�
 - **`dsh-ta`** — DeepSeek Harness にツールを直接登録するネイティブ Cordis Plugin + Bundle です。
 
 三つとも「拓.app」がホストするローカル Bridge を利用します。通常の Agent キャプチャでは Ta を表示せず、フォーカスを奪わず、ポインターを移動せず、キーイベントも送信しません。権限、モデル設定、API Key は引き続き Ta が管理します。
+
+次の一行で `ta` CLI と Ta Agent Skill をまとめてインストールまたは更新できます。
+
+```bash
+curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash
+```
+
+インストーラーは SHA-256 を検証し、CLI を `~/.local/bin/ta` に、Skill を Codex と一般的な Agent Skills ディレクトリに配置します。Agent を再起動してから接続を確認してください。
 
 ```bash
 ta status --json
@@ -250,7 +258,7 @@ Ta/
 
 ## 現在のステータス
 
-Ta v1.0.0 は、直接ダウンロードできる最初の公開版です。Apple Silicon と Intel Mac の両方に対応する Universal DMG と ZIP を提供します。現在のビルドは Apple notarization 未完了のため、初回起動時は Finder で Control キーを押しながらアプリをクリックし、「開く」を選ぶ必要があります。
+Ta v1.0.1 は現在の公開版です。Apple Silicon と Intel Mac の両方に対応する Universal DMG と ZIP を提供します。現在のビルドは Apple notarization 未完了のため、初回起動時は Finder で Control キーを押しながらアプリをクリックし、「開く」を選ぶ必要があります。
 
 既知の制限：
 
@@ -258,7 +266,7 @@ Ta v1.0.0 は、直接ダウンロードできる最初の公開版です。Appl
 - 動画、アニメーション、半透明オーバーレイ、大きく再配置されるレイアウトでは、スクロールキャプチャの継ぎ目を手動補正する場合があります。
 - 画像翻訳はローカルで文字を覆って再描画します。複雑なテクスチャ、グラデーション、影、縦書き、密なレイアウトでは跡が残ることがあります。
 - 公開リポジトリには PaddleOCR パックの定義のみを含み、ローカルで生成した大型アーカイブやモデル重みは含めません。
-- v1.0.0 は Apple Development 署名を使用しています。Developer ID 署名と Apple notarization は引き続き対応中です。
+- v1.0.1 は Apple Development 署名を使用しています。Developer ID 署名と Apple notarization は引き続き対応中です。
 
 ## ドキュメント
 

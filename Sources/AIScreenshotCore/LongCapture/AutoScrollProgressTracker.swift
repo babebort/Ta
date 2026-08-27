@@ -6,8 +6,7 @@ import Foundation
 public struct AutoScrollProgressTracker: Sendable {
     public let maximumAttemptsWithoutProgress: Int
     public private(set) var attemptsWithoutProgress = 0
-    private var hasPendingScroll = false
-    private var pendingScrollMadeProgress = false
+    public private(set) var hasPendingScroll = false
     private var pendingScrollSawInconclusiveFrame = false
 
     public init(maximumAttemptsWithoutProgress: Int = 2) {
@@ -22,39 +21,59 @@ public struct AutoScrollProgressTracker: Sendable {
     /// the scroll failed. Give that attempt a bounded settling window before
     /// consuming another retry.
     public var needsMoreSettlingTime: Bool {
-        hasPendingScroll && !pendingScrollMadeProgress && pendingScrollSawInconclusiveFrame
+        hasPendingScroll && pendingScrollSawInconclusiveFrame
     }
 
     public mutating func begin() {
         attemptsWithoutProgress = 0
         hasPendingScroll = false
-        pendingScrollMadeProgress = false
         pendingScrollSawInconclusiveFrame = false
     }
 
-    /// Finalizes the preceding attempt, then opens a new one. Callers should
-    /// inspect `shouldStop` immediately afterwards and avoid sending the newly
-    /// opened scroll when the previous attempts have reached the limit.
+    /// Opens exactly one scroll attempt. A second gesture must never be sent
+    /// until this attempt is resolved as progress or no movement.
     public mutating func didSendScroll() {
-        if hasPendingScroll {
-            if pendingScrollMadeProgress {
-                attemptsWithoutProgress = 0
-            } else {
-                attemptsWithoutProgress += 1
-            }
-        }
+        guard !hasPendingScroll else { return }
         hasPendingScroll = true
-        pendingScrollMadeProgress = false
         pendingScrollSawInconclusiveFrame = false
     }
 
     public mutating func observe(_ disposition: ScrollingFrameDisposition) {
         guard hasPendingScroll else { return }
         if case .appended = disposition {
-            pendingScrollMadeProgress = true
             attemptsWithoutProgress = 0
+            hasPendingScroll = false
+            pendingScrollSawInconclusiveFrame = false
         } else if case .rejected = disposition {
             pendingScrollSawInconclusiveFrame = true
         }
+    }
+
+    /// Call only after the settle deadline and only when the accepted viewport
+    /// is still unchanged. A matcher failure after visible movement is not the
+    /// bottom and must not consume this budget.
+    public mutating func finishPendingWithoutProgress() {
+        guard hasPendingScroll else { return }
+        attemptsWithoutProgress += 1
+        hasPendingScroll = false
+        pendingScrollSawInconclusiveFrame = false
+    }
+
+    /// Closes a gesture when movement was confirmed independently from seam
+    /// matching (for example by AX scrollbar progress or viewport pixels).
+    /// Stitching quality must never hold the scroll driver hostage.
+    public mutating func finishPendingWithProgress() {
+        guard hasPendingScroll else { return }
+        attemptsWithoutProgress = 0
+        hasPendingScroll = false
+        pendingScrollSawInconclusiveFrame = false
+    }
+
+    /// Clears a gesture that was deliberately rolled back for seam recovery.
+    /// A recovered gesture is not evidence of the bottom and must not consume
+    /// the no-progress budget.
+    public mutating func cancelPendingAttempt() {
+        hasPendingScroll = false
+        pendingScrollSawInconclusiveFrame = false
     }
 }

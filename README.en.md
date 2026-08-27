@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-D6402F.svg)](./LICENSE)
 [![Platform: macOS 14+](https://img.shields.io/badge/macOS-14%2B-1A1A1A.svg)](https://www.apple.com/macos/)
 [![Swift: 6.2](https://img.shields.io/badge/Swift-6.2-F05138.svg)](https://www.swift.org/)
-[![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.0)
+[![Release: v1.0.1](https://img.shields.io/badge/Release-v1.0.1-C98B2E.svg)](https://github.com/kangarooking/Ta/releases/tag/v1.0.1)
 
 **An AI-native screenshot tool: capture, OCR, understand images, translate, stitch, pin, and annotate in one flow.**
 
@@ -171,7 +171,7 @@ If the clipboard changes while recognition is running, Ta will not overwrite the
 
 ### Download
 
-[**Download Ta v1.0.0 (Universal macOS DMG)**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.0-macOS-universal.dmg)
+[**Download Ta v1.0.1 (Universal macOS DMG)**](https://github.com/kangarooking/Ta/releases/latest/download/Ta-1.0.1-macOS-universal.dmg)
 
 The installer supports both Apple Silicon and Intel Macs. Open the DMG and drag 「拓」 into `Applications`. This build is not yet Apple-notarized; on first launch, Control-click the app in Finder, choose **Open**, and confirm once more.
 
@@ -209,6 +209,14 @@ Ta can now act as an Agent's visual input layer in three forms:
 - **`dsh-ta`** is a native DeepSeek Harness Cordis Plugin + Bundle that registers capture and understanding tools directly.
 
 All three call the local Bridge hosted by 「拓.app」. Ordinary Agent captures do not show Ta, steal focus, move the pointer, or send keyboard events. Permissions, model profiles, and API keys remain managed by Ta.
+
+Install or update both the `ta` CLI and Ta Agent Skill with one command:
+
+```bash
+curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash
+```
+
+The installer verifies SHA-256, installs the CLI at `~/.local/bin/ta`, and installs the Skill into Codex and common Agent Skills directories. Restart the Agent, then verify the connection:
 
 ```bash
 ta status --json
@@ -250,7 +258,7 @@ Ta/
 
 ## Project status
 
-Ta v1.0.0 is the first directly downloadable public release. It ships as a universal DMG and ZIP for Apple Silicon and Intel Macs. The current build is not yet Apple-notarized, so first launch requires Control-clicking the app in Finder and choosing **Open**.
+Ta v1.0.1 is the current public release. It ships as a universal DMG and ZIP for Apple Silicon and Intel Macs. The current build is not yet Apple-notarized, so first launch requires Control-clicking the app in Finder and choosing **Open**.
 
 Known limitations:
 
@@ -258,7 +266,7 @@ Known limitations:
 - Scrolling capture can still require manual seam correction on video, animation, translucent overlays, or heavily reflowing layouts.
 - Image translation uses local cover-and-redraw composition; complex textures, gradients, shadows, vertical text, and dense layouts can leave artifacts.
 - The repository contains PaddleOCR pack definitions, not the large locally built archives or model weights.
-- v1.0.0 uses Apple Development signing; Developer ID signing and Apple notarization are still in progress.
+- v1.0.1 uses Apple Development signing; Developer ID signing and Apple notarization are still in progress.
 
 ## Documentation
 

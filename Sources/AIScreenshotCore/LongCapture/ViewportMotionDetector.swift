@@ -25,6 +25,7 @@ public struct ViewportMotionMeasurement: Equatable, Sendable {
 /// that the page reached the bottom.
 public final class ViewportMotionDetector {
     private let sampleWidth: Int
+    private let sampleHeight: Int
     private let ignoredTopFraction: Double
     private let ignoredBottomFraction: Double
     private let ignoredSideFraction: Double
@@ -35,6 +36,7 @@ public final class ViewportMotionDetector {
 
     public init(
         sampleWidth: Int = 72,
+        sampleHeight: Int = 360,
         ignoredTopFraction: Double = 0.12,
         ignoredBottomFraction: Double = 0.12,
         ignoredSideFraction: Double = 0.06,
@@ -43,6 +45,7 @@ public final class ViewportMotionDetector {
         changedPixelDifference: Int = 12
     ) {
         self.sampleWidth = max(32, sampleWidth)
+        self.sampleHeight = max(120, sampleHeight)
         self.ignoredTopFraction = min(0.3, max(0, ignoredTopFraction))
         self.ignoredBottomFraction = min(0.3, max(0, ignoredBottomFraction))
         self.ignoredSideFraction = min(0.2, max(0, ignoredSideFraction))
@@ -101,8 +104,12 @@ public final class ViewportMotionDetector {
         }
         let meanDifference = Double(totalDifference) / Double(count)
         let changedFraction = Double(changedPixels) / Double(count)
+        // Sparse chat/document pages often change only a thin band of pixels
+        // when scrolled. Treat the viewport as stationary only when *both*
+        // signals are quiet; using OR here incorrectly declared those pages at
+        // the bottom even though their text had visibly moved.
         let stationary = meanDifference <= stationaryMeanDifference
-            || changedFraction <= stationaryChangedFraction
+            && changedFraction <= stationaryChangedFraction
         return ViewportMotionMeasurement(
             hasReference: true,
             meanAbsoluteDifference: meanDifference,
@@ -112,7 +119,10 @@ public final class ViewportMotionDetector {
     }
 
     private func makeSample(from image: CGImage) throws -> GrayscaleFrame {
-        let height = max(24, Int((Double(image.height) * Double(sampleWidth) / Double(image.width)).rounded()))
+        // Motion detection must retain enough vertical resolution to notice a
+        // short scroll in a wide Retina selection. Otherwise a moved viewport
+        // can alias to "stationary" and trigger a second destructive scroll.
+        let height = min(image.height, sampleHeight)
         var pixels = [UInt8](repeating: 0, count: sampleWidth * height)
         guard let context = CGContext(
             data: &pixels,

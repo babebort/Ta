@@ -47,6 +47,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         guard let closingWindow = notification.object as? NSWindow else { return }
+        closingWindow.undoManager?.removeAllActions()
         windows.removeAll { $0 === closingWindow }
     }
 
@@ -107,8 +108,8 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         dashed.toolTip = "形状和箭头使用虚线"
         dashed.controlSize = .small
 
-        let undo = toolbarIconButton(symbol: "arrow.uturn.backward", tooltip: "撤销", target: canvas, action: #selector(AnnotationCanvasView.undo))
-        let redo = toolbarIconButton(symbol: "arrow.uturn.forward", tooltip: "重做", target: canvas, action: #selector(AnnotationCanvasView.redo))
+        let undo = toolbarIconButton(symbol: "arrow.uturn.backward", tooltip: "撤销", target: canvas, action: #selector(AnnotationCanvasView.undo(_:)))
+        let redo = toolbarIconButton(symbol: "arrow.uturn.forward", tooltip: "重做", target: canvas, action: #selector(AnnotationCanvasView.redo(_:)))
         let rotate = toolbarIconButton(symbol: "rotate.right", tooltip: "所选对象顺时针旋转 90°", target: canvas, action: #selector(AnnotationCanvasView.rotateSelected))
         let shrink = toolbarIconButton(symbol: "minus.magnifyingglass", tooltip: "缩小所选对象", target: canvas, action: #selector(AnnotationCanvasView.shrinkSelected))
         let grow = toolbarIconButton(symbol: "plus.magnifyingglass", tooltip: "放大所选对象", target: canvas, action: #selector(AnnotationCanvasView.growSelected))
@@ -573,6 +574,7 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
 
     override func resetCursorRects() {
         super.resetCursorRects()
+        guard window != nil, !isHiddenOrHasHiddenAncestor, !imageFrame.isEmpty else { return }
         let cursor: NSCursor
         switch selectedTool {
         case .select: cursor = .openHand
@@ -840,7 +842,7 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
         } else if [36, 76].contains(event.keyCode), let onCommit {
             onCommit()
         } else if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "z" {
-            event.modifierFlags.contains(.shift) ? redo() : undo()
+            event.modifierFlags.contains(.shift) ? performRedoStep() : performUndoStep()
         } else if [51, 117].contains(event.keyCode),
                   let index = selectedElementIndex,
                   elements.indices.contains(index) {
@@ -929,7 +931,18 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
     @objc func shrinkSelected() { transformSelected(scale: 0.9, rotate90: false) }
     @objc func growSelected() { transformSelected(scale: 1.1, rotate90: false) }
 
-    @objc func undo() {
+    @objc func undo(_ sender: Any?) {
+        performUndoStep()
+    }
+
+    @objc func redo(_ sender: Any?) {
+        performRedoStep()
+    }
+
+    /// Consolidated handler for toolbar actions and the system
+    /// `undo:`/`redo:` responder actions; Cmd+Z therefore always resolves to
+    /// the snapshot history instead of stale NSTextView undo registrations.
+    private func performUndoStep() {
         finishTextEntry(commit: true)
         guard let snapshot = undoSnapshots.popLast() else { return }
         redoSnapshots.append(currentSnapshot)
@@ -937,7 +950,7 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
         needsDisplay = true
     }
 
-    @objc func redo() {
+    private func performRedoStep() {
         finishTextEntry(commit: true)
         guard let snapshot = redoSnapshots.popLast() else { return }
         undoSnapshots.append(currentSnapshot)
@@ -1114,6 +1127,10 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
         textView.delegate = nil
         textView.onFinish = nil
         textView.onAdjustSize = nil
+        // Drop any registered text-editing undo actions before the view is
+        // released; otherwise a later Cmd+Z can invoke them on freed memory.
+        textView.undoManager?.removeAllActions(withTarget: textView)
+        window?.undoManager?.removeAllActions(withTarget: textView)
         activeTextView = nil
         activeTextOrigin = nil
         activeTextElementIndex = nil

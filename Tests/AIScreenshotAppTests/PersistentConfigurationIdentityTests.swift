@@ -8,6 +8,7 @@ final class PersistentConfigurationIdentityTests: XCTestCase {
         XCTAssertEqual(PersistentConfigurationIdentity.keychainService, "com.kangarooking.AIScreenshot.providers")
         XCTAssertEqual(PersistentConfigurationIdentity.multimodalProviderAccount, "openai-compatible-default")
         XCTAssertEqual(PersistentConfigurationIdentity.translationProviderAccount, "deepseek-translation-default")
+        XCTAssertEqual(PersistentConfigurationIdentity.providerProfileAccountPrefix, "ai-provider-profile-")
         XCTAssertEqual(PersistentConfigurationIdentity.deepSeekOCRAccount, "deepseek-ocr-2")
     }
 

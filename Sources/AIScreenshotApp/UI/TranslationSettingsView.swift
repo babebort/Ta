@@ -2,244 +2,280 @@ import SwiftUI
 import AIScreenshotCore
 
 struct TranslationSettingsView: View {
-    @AppStorage("translationBaseURL") private var baseURL = TranslationConfiguration.defaultBaseURL
-    @AppStorage("translationTextModel") private var textModel = TranslationConfiguration.defaultTextModel
-    @AppStorage("translationVisionModel") private var visionModel = TranslationConfiguration.defaultVisionModel
     @AppStorage("translationSourceLanguage") private var sourceLanguage = TranslationConfiguration.defaultSourceLanguage
     @AppStorage("translationTargetLanguage") private var targetLanguage = TranslationConfiguration.defaultTargetLanguage
     @AppStorage("translationDefaultMode") private var defaultMode = ScreenshotTranslationMode.textOnly.rawValue
     @AppStorage("translationUsesVisionFallback") private var usesVisionFallback = true
 
-    @State private var apiKey = ""
-    @State private var hasStoredKey = false
+    @State private var state = AIProviderProfileState()
+    @State private var eligibleProfiles: [AIProviderProfile] = []
+    @State private var selectedProfileID: UUID?
     @State private var statusMessage: String?
     @State private var statusIsError = false
     @State private var isTesting = false
     @State private var translationShortcut = HotKeyPreferences().shortcut(for: .translationCapture)
 
-    private let secretStore = KeychainSecretStore()
-    private let service = ScreenshotTranslationService()
+    private let profileStore = AIProviderProfileStore()
+    private let translationService = ScreenshotTranslationService()
 
     var body: some View {
-        Form {
-            Section("翻译语言") {
-                languageRow(title: "源语言", value: $sourceLanguage, presets: ["自动检测", "英文", "简体中文", "日文", "韩文"])
-                languageRow(title: "目标语言", value: $targetLanguage, presets: ["简体中文", "英文", "繁体中文", "日文", "韩文", "西班牙文"])
-                Picker("默认翻译方式", selection: $defaultMode) {
-                    ForEach(ScreenshotTranslationMode.allCases, id: \.rawValue) { mode in
-                        Text(mode.displayName).tag(mode.rawValue)
-                    }
-                }
-                Text("工具栏“翻译”会直接执行这里的默认方式；语言可以直接输入任意名称。快捷键 \(translationShortcut.displayText) 始终执行“翻译文字并复制”。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 13) {
+                compactHeader
+                modelSection
+                languageSection
+                behaviorSection
+                privacyNote
             }
-
-            Section("DeepSeek 模型") {
-                TextField("API 地址", text: $baseURL)
-                modelRow(
-                    title: "文字模型名称",
-                    value: $textModel,
-                    presets: [TranslationConfiguration.defaultTextModel]
-                )
-                modelRow(
-                    title: "视觉模型名称",
-                    value: $visionModel,
-                    presets: [TranslationConfiguration.defaultVisionModel]
-                )
-                Toggle("本地 OCR 低置信度时使用视觉模型", isOn: $usesVisionFallback)
-                Text("模型名称可以直接输入，也可以从常用模型中选择；文字模型负责翻译，视觉模型只在 OCR 失败或置信度较低时读取本次选区。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("API Key") {
-                LabeledContent("API Key") {
-                    Label(
-                        hasStoredKey ? "•••••••••••• · 已安全保存" : "尚未保存",
-                        systemImage: hasStoredKey ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-                    )
-                    .foregroundStyle(hasStoredKey ? Color.green : Color.orange)
-                }
-                SecureField(
-                    hasStoredKey ? "新的 API Key（不更新可留空）" : "DeepSeek API Key",
-                    text: $apiKey
-                )
-
-                HStack {
-                    Button("恢复 DeepSeek 默认值") {
-                        baseURL = TranslationConfiguration.defaultBaseURL
-                        textModel = TranslationConfiguration.defaultTextModel
-                        visionModel = TranslationConfiguration.defaultVisionModel
-                        status("已恢复当前 DeepSeek 默认模型。")
-                    }
-                    Spacer()
-                    if hasStoredKey {
-                        Button("移除 Key", role: .destructive) { removeKey() }
-                    }
-                    Button("保存") { save() }
-                        .buttonStyle(.borderedProminent)
-                }
-            }
-
-            Section {
-                HStack {
-                    Button("测试文字模型") { testTextModel() }
-                    Button("测试视觉模型") { testVisionModel() }
-                    Spacer()
-                    if isTesting { ProgressView().controlSize(.small) }
-                }
-                .disabled(isTesting)
-
-                if let validationMessage {
-                    Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(.caption)
-                        .foregroundStyle(statusIsError ? .red : .secondary)
-                }
-            } header: {
-                Text("连接测试")
-            } footer: {
-                Text("Key 不会写入偏好设置、源码或日志，在同一台 Mac 上覆盖升级拓时会继续保留。全文和双语图片由本机重新排版；视觉回退开启时，截图会发送到所配置的视觉模型。")
-            }
+            .padding(.horizontal, 4)
+            .padding(.bottom, 8)
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
-        .onAppear {
-            hasStoredKey = secretStore.contains(account: ScreenshotTranslationService.keychainAccount)
-        }
+        .scrollIndicators(.automatic)
+        .onAppear(perform: reload)
         .onReceive(NotificationCenter.default.publisher(for: HotKeyPreferences.didChangeNotification)) { _ in
             translationShortcut = HotKeyPreferences().shortcut(for: .translationCapture)
         }
     }
 
-    private func languageRow(
-        title: String,
-        value: Binding<String>,
-        presets: [String]
-    ) -> some View {
-        HStack {
-            TextField(title, text: value)
-            Menu("常用") {
-                ForEach(presets, id: \.self) { language in
-                    Button(language) { value.wrappedValue = language }
+    private var compactHeader: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "character.book.closed.fill")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(TaPalette.cinnabar)
+                .frame(width: 38, height: 38)
+                .background(TaPalette.cinnabar.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("截图翻译")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(TaPalette.ink)
+                Text("沿用已保存的 AI 模型，只需设置语言和默认行为。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if selectedProfile != nil {
+                Label("已就绪", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.green)
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private var modelSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("使用的模型配置", detail: "这里只显示 API Key、文字模型和视觉模型均已就绪的配置。")
+            if eligibleProfiles.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("暂无可用于翻译的模型")
+                            .font(.callout.weight(.semibold))
+                        Text("先完成一套 AI 模型配置，翻译页会自动复用。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("去配置 AI 模型") {
+                        NotificationCenter.default.post(name: .openAIModelSettings, object: nil)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(13)
+                .background(surface)
+            } else {
+                VStack(alignment: .leading, spacing: 9) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.green)
+                        Picker("模型配置", selection: $selectedProfileID) {
+                            ForEach(eligibleProfiles) { profile in
+                                Text(profile.trimmedName).tag(Optional(profile.id))
+                            }
+                        }
+                        .onChange(of: selectedProfileID) { _, newValue in
+                            selectTranslationProfile(newValue)
+                        }
+                        Spacer()
+                        Label("可用", systemImage: "circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.green)
+                    }
+
+                    if let profile = selectedProfile {
+                        HStack(spacing: 10) {
+                            modelValue("文字", profile.textModel)
+                            Divider().frame(height: 24)
+                            modelValue("视觉", profile.visionModel)
+                            Spacer()
+                        }
+                    }
+
+                    HStack {
+                        if state.profiles.count > eligibleProfiles.count {
+                            Text("另有 \(state.profiles.count - eligibleProfiles.count) 套配置尚未完成。")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("管理模型") {
+                            NotificationCenter.default.post(name: .openAIModelSettings, object: nil)
+                        }
+                        Button("测试") { testSelectedProfile() }
+                            .disabled(isTesting || selectedProfile == nil)
+                    }
+                    .controlSize(.small)
+                }
+                .padding(13)
+                .background(surface)
+            }
+
+            if isTesting {
+                HStack(spacing: 7) {
+                    ProgressView().controlSize(.small)
+                    Text("正在测试文字与视觉能力…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-        }
-    }
-
-    private func modelRow(
-        title: String,
-        value: Binding<String>,
-        presets: [String]
-    ) -> some View {
-        HStack {
-            TextField(title, text: value)
-            Menu("常用") {
-                ForEach(presets.filter { !$0.isEmpty }, id: \.self) { model in
-                    Button(model) { value.wrappedValue = model }
-                }
-                Divider()
-                Button("自定义模型名称") {
-                    value.wrappedValue = ""
-                }
+            if let statusMessage {
+                Label(statusMessage, systemImage: statusIsError ? "xmark.octagon.fill" : "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(statusIsError ? .red : .green)
+                    .textSelection(.enabled)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
         }
     }
 
-    private var currentConfiguration: TranslationConfiguration {
-        TranslationConfiguration(
-            baseURL: baseURL,
-            textModel: textModel,
-            visionModel: visionModel,
-            sourceLanguage: sourceLanguage,
-            targetLanguage: targetLanguage,
-            defaultMode: ScreenshotTranslationMode(rawValue: defaultMode) ?? .textOnly,
-            usesVisionFallback: usesVisionFallback
-        )
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("翻译语言", detail: "默认自动识别截图语言，也可以直接输入其他语言。")
+            VStack(spacing: 8) {
+                languageRow(title: "源语言", value: $sourceLanguage, presets: ["自动检测", "英文", "简体中文", "日文", "韩文"])
+                languageRow(title: "目标语言", value: $targetLanguage, presets: ["简体中文", "英文", "繁体中文", "日文", "韩文", "西班牙文"])
+            }
+            .padding(12)
+            .background(surface)
+        }
     }
 
-    private var validationMessage: String? {
-        currentConfiguration.validationMessage
+    private var behaviorSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("默认行为", detail: "截图工具栏点击“翻译”后直接执行，不再二次确认。")
+            VStack(alignment: .leading, spacing: 9) {
+                Picker("默认翻译方式", selection: $defaultMode) {
+                    ForEach(ScreenshotTranslationMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.displayName).tag(mode.rawValue)
+                    }
+                }
+                Toggle("本地 OCR 置信度较低时，使用视觉模型读取截图", isOn: $usesVisionFallback)
+                Text("快捷键 \(translationShortcut.displayText) 始终执行“翻译文字并复制”。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .background(surface)
+        }
     }
 
-    private func save() {
-        guard validationMessage == nil else {
-            status(validationMessage ?? "配置无效。", isError: true)
-            return
+    private var privacyNote: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "lock.shield.fill")
+                .foregroundStyle(.green)
+            Text("API Key 只保存在这台 Mac 的 Keychain，覆盖升级拓后继续保留；只有主动翻译或识图时才会发送所选截图。")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
-        let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedKey.isEmpty || hasStoredKey else {
-            status("请输入 API Key。", isError: true)
-            return
+        .padding(.horizontal, 3)
+    }
+
+    private func sectionTitle(_ title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(TaPalette.ink)
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
+    }
+
+    private func modelValue(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption.monospaced())
+                .lineLimit(1)
+        }
+    }
+
+    private func languageRow(title: String, value: Binding<String>, presets: [String]) -> some View {
+        LabeledContent(title) {
+            HStack(spacing: 8) {
+                TextField(title, text: value)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(minWidth: 360)
+                Menu("常用") {
+                    ForEach(presets, id: \.self) { language in
+                        Button(language) { value.wrappedValue = language }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+        }
+    }
+
+    private var surface: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(TaPalette.elevatedPaper.opacity(0.84))
+            .overlay { RoundedRectangle(cornerRadius: 12).stroke(TaPalette.hairline, lineWidth: 1) }
+    }
+
+    private var selectedProfile: AIProviderProfile? {
+        eligibleProfiles.first { $0.id == selectedProfileID }
+    }
+
+    private func reload() {
         do {
-            if !trimmedKey.isEmpty {
-                try secretStore.save(trimmedKey, account: ScreenshotTranslationService.keychainAccount)
-                apiKey = ""
-                hasStoredKey = true
+            state = try profileStore.loadState()
+            eligibleProfiles = profileStore.eligibleTranslationProfiles(in: state)
+            if eligibleProfiles.contains(where: { $0.id == state.translationProfileID }) {
+                selectedProfileID = state.translationProfileID
+            } else {
+                selectedProfileID = eligibleProfiles.first?.id
+                if let selectedProfileID {
+                    _ = try profileStore.setTranslationProfile(id: selectedProfileID)
+                }
             }
-            status("翻译配置已保存。")
         } catch {
             status(error.localizedDescription, isError: true)
         }
     }
 
-    private func removeKey() {
+    private func selectTranslationProfile(_ id: UUID?) {
         do {
-            try secretStore.delete(account: ScreenshotTranslationService.keychainAccount)
-            apiKey = ""
-            hasStoredKey = false
-            status("翻译 API Key 已移除。")
+            state = try profileStore.setTranslationProfile(id: id)
+            status("已切换翻译模型。")
         } catch {
             status(error.localizedDescription, isError: true)
         }
     }
 
-    private func testTextModel() {
-        guard validationMessage == nil else {
-            status(validationMessage ?? "配置无效。", isError: true)
-            return
-        }
+    private func testSelectedProfile() {
+        guard let profile = selectedProfile else { return }
         isTesting = true
-        status("正在测试文字模型…")
-        let candidate = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        status("正在测试…")
         Task {
             do {
-                let response = try await service.testTextModel(apiKey: candidate.isEmpty ? nil : candidate)
-                status("文字模型连接成功：\(response.prefix(80))")
-            } catch {
-                status(error.localizedDescription, isError: true)
-            }
-            isTesting = false
-        }
-    }
-
-    private func testVisionModel() {
-        guard validationMessage == nil else {
-            status(validationMessage ?? "配置无效。", isError: true)
-            return
-        }
-        guard !visionModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            status("请填写视觉模型。", isError: true)
-            return
-        }
-        isTesting = true
-        status("正在生成测试图片并调用视觉模型…")
-        let candidate = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        Task {
-            do {
-                let response = try await service.testVisionModel(apiKey: candidate.isEmpty ? nil : candidate)
-                status("视觉模型连接成功：\(response.prefix(80))")
+                _ = try await translationService.testTextModel(profile: profile)
+                _ = try await translationService.testVisionModel(profile: profile)
+                status("文字模型与视觉模型均可用。")
             } catch {
                 status(error.localizedDescription, isError: true)
             }

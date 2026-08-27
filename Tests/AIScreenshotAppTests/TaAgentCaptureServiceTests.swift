@@ -18,6 +18,7 @@ struct TaAgentCaptureServiceTests {
         #expect(result.target.windowID == 42)
         #expect(result.target.ownerProcessID == 420)
         #expect(request?.windowID == 42)
+        #expect(request?.pixelScale == 2)
         #expect(request?.showsCursor == false)
     }
 

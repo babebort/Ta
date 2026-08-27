@@ -5,5 +5,6 @@ enum PersistentConfigurationIdentity {
     static let keychainService = "com.kangarooking.AIScreenshot.providers"
     static let multimodalProviderAccount = "openai-compatible-default"
     static let translationProviderAccount = "deepseek-translation-default"
+    static let providerProfileAccountPrefix = "ai-provider-profile-"
     static let deepSeekOCRAccount = "deepseek-ocr-2"
 }

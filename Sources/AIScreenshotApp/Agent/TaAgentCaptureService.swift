@@ -165,13 +165,13 @@ struct TaAgentCaptureService: Sendable {
                     .min(by: { $0.zOrder < $1.zOrder }) else {
                 throw TaAgentCaptureError.targetNotFound
             }
-            return windowResolution(window)
+            return windowResolution(window, displays: snapshot.displays)
 
         case .window(let id):
             guard let window = snapshot.windows.first(where: { $0.id == id }) else {
                 throw TaAgentCaptureError.targetNotFound
             }
-            return windowResolution(window)
+            return windowResolution(window, displays: snapshot.displays)
 
         case .region(let displayID, let globalRect):
             guard let display = snapshot.displays.first(where: { $0.id == displayID }) else {
@@ -227,15 +227,20 @@ struct TaAgentCaptureService: Sendable {
     }
 
     private func windowResolution(
-        _ window: TaAgentWindowTarget
+        _ window: TaAgentWindowTarget,
+        displays: [TaAgentDisplayTarget]
     ) -> (request: TaAgentResolvedCaptureRequest, target: TaAgentResolvedTarget) {
-        (
+        let pixelScale = displays
+            .filter { $0.frame.intersects(window.frame) }
+            .map(\.pixelScale)
+            .max() ?? 1
+        return (
             TaAgentResolvedCaptureRequest(
                 kind: .window,
                 displayID: nil,
                 windowID: window.id,
                 sourceRect: nil,
-                pixelScale: 1,
+                pixelScale: max(1, pixelScale),
                 showsCursor: false
             ),
             TaAgentResolvedTarget(
@@ -256,18 +261,28 @@ private struct ScreenCaptureAgentBackend: TaAgentCaptureBackend {
     private let captureService = ScreenCaptureService()
 
     func snapshot(frontmostProcessID: pid_t?) async throws -> TaAgentCaptureSnapshot {
+        let screenScales: [CGDirectDisplayID: CGFloat] = await MainActor.run {
+            var scales: [CGDirectDisplayID: CGFloat] = [:]
+            for screen in NSScreen.screens {
+                guard let displayID = screen.deviceDescription[
+                    NSDeviceDescriptionKey("NSScreenNumber")
+                ] as? CGDirectDisplayID else { continue }
+                scales[displayID] = screen.backingScaleFactor
+            }
+            return scales
+        }
         let content = try await SCShareableContent.excludingDesktopWindows(
             false,
             onScreenWindowsOnly: true
         )
         let displays = content.displays.map { display in
-            let scale = display.frame.width > 0
+            let fallbackScale = display.frame.width > 0
                 ? CGFloat(display.width) / display.frame.width
                 : 1
             return TaAgentDisplayTarget(
                 id: display.displayID,
                 frame: display.frame,
-                pixelScale: max(1, scale),
+                pixelScale: max(1, screenScales[display.displayID] ?? fallbackScale),
                 isMain: display.displayID == CGMainDisplayID()
             )
         }
@@ -310,6 +325,7 @@ private struct ScreenCaptureAgentBackend: TaAgentCaptureBackend {
             }
             return try await captureService.captureWindow(
                 windowID: windowID,
+                pixelScale: request.pixelScale,
                 showsCursor: request.showsCursor
             )
         }

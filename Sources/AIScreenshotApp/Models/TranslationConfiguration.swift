@@ -33,15 +33,6 @@ struct TranslationConfiguration: Equatable, Sendable {
     }
 
     var validationMessage: String? {
-        if let endpointError = ProviderEndpointValidator().validationMessage(for: baseURL) {
-            return endpointError
-        }
-        if baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请填写翻译 API 地址。"
-        }
-        if textModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请填写文字翻译模型。"
-        }
         if targetLanguage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return "请填写目标语言。"
         }

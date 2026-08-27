@@ -10,21 +10,49 @@ DeepSeek Harness ──> dsh-ta Plugin ─┘
 
 ## 1. 前置条件
 
-1. 安装 Ta v1.0.0 或更高版本，并把「拓.app」放入 `/Applications`。
+1. 安装 Ta v1.0.1 或更高版本，并把「拓.app」放入 `/Applications`。
 2. 打开拓，在“设置 → 权限”中允许屏幕录制。
 3. 打开“设置 → Agent”，确认“允许本机 Agent 调用拓”已开启。
 4. 如需 AI 识图、远程 OCR 或翻译，先在拓中配置模型。Agent 无法读取 Keychain 中的 API Key。
 
 普通 Agent 截图使用 ScreenCaptureKit 在后台完成：不弹框选层、不激活拓、不移动鼠标、不发送键盘事件。钉图、交互框选、标注等会改变屏幕状态的能力不属于无感调用。
 
-## 2. 安装 `ta` CLI
+## 2. 一键安装 CLI 与 Skill（推荐）
 
-从 GitHub Release 下载 `Ta-CLI-1.0.0-macOS-universal.tar.gz`，然后安装到用户目录：
+打开终端，执行这一行：
 
 ```bash
-tar -xzf Ta-CLI-1.0.0-macOS-universal.tar.gz
+curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash
+```
+
+也可以直接把下面这段话发给 Codex、Claude Code 或其他本机 Agent：
+
+> 请帮我在这台 Mac 安装拓（Ta）的 CLI 和 Agent Skill。请执行：`curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash`。安装完成后运行 `~/.local/bin/ta status --json` 验证，确认 JSON 顶层 `ok` 为 `true`、`data.bridge` 为 `ready`。如果只是权限尚未开启，请告诉我去“拓 → 设置 → 权限 / Agent”完成授权。不要索要、读取或输出任何 API Key，也不要替我修改云端模型配置。
+
+安装器会完成以下操作：
+
+- 从最新 GitHub Release 下载通用版 CLI 与 Ta Agent Skill；
+- 在写入前校验两份压缩包的 SHA-256；
+- 把 CLI 安装到 `~/.local/bin/ta`，并在需要时把该目录加入 `~/.zprofile`；
+- 把 Skill 安装到 `~/.codex/skills/ta` 与 `~/.agents/skills/ta`；如果本机已有 Claude 配置目录，也会安装到 `~/.claude/skills/ta`；
+- 重复执行时安全更新已有文件，不需要先卸载。
+
+安装完成后重新启动 Agent，再运行：
+
+```bash
+ta status --json
+```
+
+如果当前 Shell 暂时找不到 `ta`，可先执行 `source ~/.zprofile`，或直接运行 `~/.local/bin/ta status --json`。
+
+## 3. 手动安装 `ta` CLI
+
+从 GitHub Release 下载 `Ta-CLI-1.0.1-macOS-universal.tar.gz`，然后安装到用户目录：
+
+```bash
+tar -xzf Ta-CLI-1.0.1-macOS-universal.tar.gz
 mkdir -p "$HOME/.local/bin"
-install -m 755 ta-cli-1.0.0/bin/ta "$HOME/.local/bin/ta"
+install -m 755 ta-cli-1.0.1/bin/ta "$HOME/.local/bin/ta"
 export PATH="$HOME/.local/bin:$PATH"
 ta status --json
 ```
@@ -34,9 +62,9 @@ ta status --json
 ```json
 {
   "name": "ta",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "bridgeProtocol": 1,
-  "requiresTaApp": ">=1.0.0",
+  "requiresTaApp": ">=1.0.1",
   "minimumMacOS": "14.0",
   "architectures": ["arm64", "x86_64"]
 }
@@ -79,14 +107,14 @@ ta transform redo --json
 
 Agent 应始终检查 JSON 顶层的 `ok`。图片命令还必须确认 `artifacts` 非空；不能仅根据命令已经发出就宣称成功。
 
-## 3. 安装 Ta Agent Skill
+## 4. 手动安装 Ta Agent Skill
 
-从 Release 下载并解压 `Ta-Agent-Skill-1.0.0.zip`。Skill 不重复实现截图算法，它负责教 Agent 选择正确的 `ta` 命令、验证结果并遵守隐私边界。
+从 Release 下载并解压 `Ta-Agent-Skill-1.0.1.zip`。Skill 不重复实现截图算法，它负责教 Agent 选择正确的 `ta` 命令、验证结果并遵守隐私边界。
 
 Codex 示例：
 
 ```bash
-unzip Ta-Agent-Skill-1.0.0.zip
+unzip Ta-Agent-Skill-1.0.1.zip
 mkdir -p "$HOME/.codex/skills"
 ditto ta "$HOME/.codex/skills/ta"
 ```
@@ -101,12 +129,12 @@ ta status --json
 
 它不会读取 API Key，也不会在没有明确需求时修改剪贴板或保存文件。
 
-## 4. 安装 DeepSeek Harness 原生插件
+## 5. 安装 DeepSeek Harness 原生插件
 
 `dsh-ta` 是原生 Cordis Plugin + Bundle，不是 MCP 配置别名。它需要 DeepSeek Harness `0.1.0-rc.7` 或更高版本，以及 Node.js `22.19.0` 或更高版本。
 
 ```bash
-dsh plugin --profile web add ./dsh-ta-1.0.0.tgz
+dsh plugin --profile web add ./dsh-ta-1.0.1.tgz
 dsh --profile web --dump-config
 ```
 
@@ -194,15 +222,15 @@ dsh plugin --profile web remove dsh-ta
 ## 8. 从源码生成发布包
 
 ```bash
-./scripts/package-ta-cli.sh 1.0.0
-./scripts/package-ta-skill.sh 1.0.0
-TA_NODE_BIN=/path/to/node ./scripts/package-dsh-ta.sh 1.0.0
+./scripts/package-ta-cli.sh 1.0.1
+./scripts/package-ta-skill.sh 1.0.1
+TA_NODE_BIN=/path/to/node ./scripts/package-dsh-ta.sh 1.0.1
 ```
 
 完整发布脚本会同时生成 App DMG/ZIP、CLI、Skill、Harness TGZ 和统一校验文件：
 
 ```bash
-./scripts/package-release.sh 1.0.0
+./scripts/package-release.sh 1.0.1
 ```
 
-最终文件位于 `artifacts/release/v1.0.0/`，并全部写入 `SHA256SUMS.txt`。
+最终文件位于 `artifacts/release/v1.0.1/`，并全部写入 `SHA256SUMS.txt`。

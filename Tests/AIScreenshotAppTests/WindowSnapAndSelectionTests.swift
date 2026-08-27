@@ -3,6 +3,59 @@ import XCTest
 @testable import AIScreenshotApp
 
 final class WindowSnapAndSelectionTests: XCTestCase {
+    func testFrozenDisplayCropUsesRetinaPixelsAndAppKitVerticalCoordinates() {
+        let selection = CaptureSelection(
+            globalRect: CGRect(x: 50, y: 25, width: 100, height: 50),
+            screenFrame: CGRect(x: 0, y: 0, width: 200, height: 150),
+            displayID: 1,
+            backingScaleFactor: 2
+        )
+
+        XCTAssertEqual(
+            FrozenDisplayCropper.pixelRect(
+                for: selection,
+                imageWidth: 400,
+                imageHeight: 300
+            ),
+            CGRect(x: 100, y: 150, width: 200, height: 100)
+        )
+    }
+
+    func testCaptureServiceCropsTheFrozenFrameInsteadOfRecapturingTheDisplay() async throws {
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let context = try XCTUnwrap(CGContext(
+            data: nil,
+            width: 400,
+            height: 300,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ))
+        let frozenImage = try XCTUnwrap(context.makeImage())
+        let selection = CaptureSelection(
+            globalRect: CGRect(x: 50, y: 25, width: 100, height: 50),
+            screenFrame: CGRect(x: 0, y: 0, width: 200, height: 150),
+            displayID: 999_999,
+            backingScaleFactor: 2,
+            frozenDisplayImage: frozenImage
+        )
+
+        let cropped = try await ScreenCaptureService().capture(selection)
+
+        XCTAssertEqual(cropped.width, 200)
+        XCTAssertEqual(cropped.height, 100)
+    }
+
+    @MainActor
+    func testInitialCaptureCursorIsCrosshair() {
+        let view = SelectionOverlayView(frame: CGRect(x: 0, y: 0, width: 800, height: 600))
+
+        view.activateInitialCursor()
+
+        XCTAssertTrue(NSCursor.current === NSCursor.crosshair)
+    }
+
     func testFrontmostContainingWindowWins() {
         let targets = [
             WindowSnapTarget(windowID: 1, frame: CGRect(x: 0, y: 0, width: 800, height: 600), zOrder: 4),

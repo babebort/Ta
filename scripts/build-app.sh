@@ -22,6 +22,8 @@ cp "$PROJECT_ROOT_DIR/Resources/Info.plist" "$APP_BUNDLE_DIR/Contents/Info.plist
 cp "$PROJECT_ROOT_DIR/Resources/Ta.icns" "$APP_BUNDLE_DIR/Contents/Resources/Ta.icns"
 mkdir -p "$APP_BUNDLE_DIR/Contents/Resources/Brand"
 cp "$PROJECT_ROOT_DIR/Resources/Brand/Ta-AppIcon.png" "$APP_BUNDLE_DIR/Contents/Resources/Brand/Ta-AppIcon.png"
+rm -rf "$APP_BUNDLE_DIR/Contents/Resources/Brand/Providers"
+cp -R "$PROJECT_ROOT_DIR/Resources/Brand/Providers" "$APP_BUNDLE_DIR/Contents/Resources/Brand/Providers"
 
 chmod 755 "$APP_BUNDLE_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 plutil -lint "$APP_BUNDLE_DIR/Contents/Info.plist"

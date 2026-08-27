@@ -105,27 +105,19 @@ struct TaAgentAnnotationRenderer {
     private func drawArrow(_ operation: AnnotationArrowOperation, height: Int, context: CGContext) {
         let start = map(operation.start, height: height)
         let end = map(operation.end, height: height)
-        configureStroke(operation.color, width: operation.lineWidth, dashed: operation.dashed, context: context)
-        context.setLineCap(.round)
-        context.move(to: start)
-        context.addLine(to: end)
-        context.strokePath()
-
-        let angle = atan2(end.y - start.y, end.x - start.x)
-        let headLength = max(12, operation.lineWidth * 3.2)
-        let spread = CGFloat.pi / 7
-        context.setLineDash(phase: 0, lengths: [])
-        context.move(to: end)
-        context.addLine(to: CGPoint(
-            x: end.x - headLength * cos(angle - spread),
-            y: end.y - headLength * sin(angle - spread)
-        ))
-        context.move(to: end)
-        context.addLine(to: CGPoint(
-            x: end.x - headLength * cos(angle + spread),
-            y: end.y - headLength * sin(angle + spread)
-        ))
-        context.strokePath()
+        let points = TaperedArrowGeometry.polygon(
+            from: start,
+            to: end,
+            width: operation.lineWidth
+        )
+        guard let first = points.first else { return }
+        let path = CGMutablePath()
+        path.move(to: first)
+        points.dropFirst().forEach { path.addLine(to: $0) }
+        path.closeSubpath()
+        context.addPath(path)
+        context.setFillColor(cgColor(operation.color))
+        context.fillPath()
     }
 
     private func drawStroke(_ operation: AnnotationStrokeOperation, height: Int, context: CGContext) {

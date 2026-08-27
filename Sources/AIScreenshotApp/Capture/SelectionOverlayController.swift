@@ -9,6 +9,7 @@ struct CaptureSelection: @unchecked Sendable {
     let backingScaleFactor: CGFloat
     let excludedWindowIDs: [CGWindowID]
     let sourceApplicationProcessID: pid_t?
+    let frozenDisplayImage: CGImage?
 
     init(
         globalRect: CGRect,
@@ -16,7 +17,8 @@ struct CaptureSelection: @unchecked Sendable {
         displayID: CGDirectDisplayID,
         backingScaleFactor: CGFloat,
         excludedWindowIDs: [CGWindowID] = [],
-        sourceApplicationProcessID: pid_t? = nil
+        sourceApplicationProcessID: pid_t? = nil,
+        frozenDisplayImage: CGImage? = nil
     ) {
         self.globalRect = globalRect
         self.screenFrame = screenFrame
@@ -24,7 +26,16 @@ struct CaptureSelection: @unchecked Sendable {
         self.backingScaleFactor = backingScaleFactor
         self.excludedWindowIDs = excludedWindowIDs
         self.sourceApplicationProcessID = sourceApplicationProcessID
+        self.frozenDisplayImage = frozenDisplayImage
     }
+}
+
+@MainActor
+struct SelectionOverlayStartContext {
+    let screen: NSScreen
+    let displayID: CGDirectDisplayID
+    let sourceProcessID: pid_t?
+    let snapTargets: [WindowSnapTarget]
 }
 
 @MainActor
@@ -34,19 +45,8 @@ final class SelectionOverlayController {
     private var isStarting = false
     private var isFinishing = false
 
-    func begin(
-        showsActionToolbar: Bool,
-        presetRect: CGRect? = nil,
-        completion: @escaping (CaptureSelection?, CaptureQuickAction?) -> Void
-    ) {
-        guard panel == nil, !isStarting else { return }
-        isStarting = true
-        isFinishing = false
-
-        let mouseLocation = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { NSMouseInRect(mouseLocation, $0.frame, false) }
-            ?? NSScreen.main
-            ?? NSScreen.screens[0]
+    func prepareStartContext() -> SelectionOverlayStartContext? {
+        guard let screen = Self.screenUnderPointer() else { return nil }
         let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
         let displayID = CGDirectDisplayID(screenNumber?.uint32Value ?? 0)
         let sourceProcessID = NSWorkspace.shared.frontmostApplication?.processIdentifier
@@ -54,12 +54,51 @@ final class SelectionOverlayController {
             on: screen,
             frontmostProcessID: sourceProcessID
         )
-
-        showPanel(
+        return SelectionOverlayStartContext(
             screen: screen,
             displayID: displayID,
             sourceProcessID: sourceProcessID,
-            snapTargets: targets,
+            snapTargets: targets
+        )
+    }
+
+    func begin(
+        showsActionToolbar: Bool,
+        presetRect: CGRect? = nil,
+        completion: @escaping (CaptureSelection?, CaptureQuickAction?) -> Void
+    ) {
+        guard panel == nil, !isStarting else { return }
+        guard let context = prepareStartContext() else {
+            completion(nil, nil)
+            return
+        }
+        begin(
+            context: context,
+            frozenDisplayImage: nil,
+            showsActionToolbar: showsActionToolbar,
+            presetRect: presetRect,
+            completion: completion
+        )
+    }
+
+    func begin(
+        context: SelectionOverlayStartContext,
+        frozenDisplayImage: CGImage?,
+        showsActionToolbar: Bool,
+        presetRect: CGRect? = nil,
+        completion: @escaping (CaptureSelection?, CaptureQuickAction?) -> Void
+    ) {
+        guard panel == nil, !isStarting else { return }
+        isStarting = true
+        isFinishing = false
+        NSCursor.crosshair.set()
+
+        showPanel(
+            screen: context.screen,
+            displayID: context.displayID,
+            sourceProcessID: context.sourceProcessID,
+            snapTargets: context.snapTargets,
+            frozenDisplayImage: frozenDisplayImage,
             showsActionToolbar: showsActionToolbar,
             presetRect: presetRect,
             completion: completion
@@ -71,6 +110,7 @@ final class SelectionOverlayController {
         displayID: CGDirectDisplayID,
         sourceProcessID: pid_t?,
         snapTargets: [WindowSnapTarget],
+        frozenDisplayImage: CGImage?,
         showsActionToolbar: Bool,
         presetRect: CGRect?,
         completion: @escaping (CaptureSelection?, CaptureQuickAction?) -> Void
@@ -96,6 +136,7 @@ final class SelectionOverlayController {
 
         let overlay = SelectionOverlayView(frame: CGRect(origin: .zero, size: screen.frame.size))
         overlay.showsActionToolbar = showsActionToolbar
+        overlay.setFrozenDisplayImage(frozenDisplayImage)
         overlay.onFinish = { [weak self, weak panel, weak overlay] localRect, action in
             guard let self, let panel else { return }
             let globalRect = localRect.map { panel.convertToScreen($0) }
@@ -106,7 +147,8 @@ final class SelectionOverlayController {
                     displayID: displayID,
                     backingScaleFactor: screen.backingScaleFactor,
                     excludedWindowIDs: [CGWindowID(panel.windowNumber)],
-                    sourceApplicationProcessID: sourceProcessID
+                    sourceApplicationProcessID: sourceProcessID,
+                    frozenDisplayImage: frozenDisplayImage
                 )
                 if action == .edit {
                     overlay?.prepareForDeferredDismissal()
@@ -147,6 +189,8 @@ final class SelectionOverlayController {
         panel.orderFrontRegardless()
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(overlay)
+        panel.invalidateCursorRects(for: overlay)
+        overlay.activateInitialCursor()
     }
 
     func dismiss() {
@@ -164,6 +208,14 @@ final class SelectionOverlayController {
         panel?.orderOut(nil)
         panel?.close()
         panel = nil
+        NSCursor.arrow.set()
+    }
+
+    private static func screenUnderPointer() -> NSScreen? {
+        let mouseLocation = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(mouseLocation, $0.frame, false) }
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
     }
 }
 

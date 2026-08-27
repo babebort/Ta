@@ -6,41 +6,57 @@ import AIScreenshotCore
 enum ScreenshotTranslationServiceError: LocalizedError {
     case imageEncodingFailed
     case missingTextBoxes
+    case localOCRUnavailableForImage
 
     var errorDescription: String? {
         switch self {
         case .imageEncodingFailed: "无法为翻译模型编码截图。"
         case .missingTextBoxes: "没有找到可靠的文字位置，无法生成翻译图片；可以改用“翻译文字并复制”。"
+        case .localOCRUnavailableForImage:
+            "本地文字识别暂时无法定位图片中的文字，因此不能生成全文翻译图片。请重试，或在翻译设置中改用“翻译文字并复制”。"
         }
     }
 }
 
 struct ScreenshotTranslationService: @unchecked Sendable {
+    // Kept as a migration compatibility alias for existing installations.
     static let keychainAccount = PersistentConfigurationIdentity.translationProviderAccount
 
     private let client: TranslationProviderClient
-    private let secretStore = KeychainSecretStore()
+    private let profileStore: AIProviderProfileStore
 
-    init(client: TranslationProviderClient = TranslationProviderClient()) {
+    init(
+        client: TranslationProviderClient = TranslationProviderClient(),
+        profileStore: AIProviderProfileStore = AIProviderProfileStore()
+    ) {
         self.client = client
+        self.profileStore = profileStore
     }
 
     var isConfigured: Bool {
-        let configuration = TranslationConfiguration.load()
-        return configuration.validationMessage == nil
-            && secretStore.contains(account: Self.keychainAccount)
+        (try? requiredProfile()) != nil
+    }
+
+    var selectedTextModelName: String {
+        (try? requiredProfile().textModel) ?? "文字模型"
+    }
+
+    func validateConfiguration() throws {
+        _ = try requiredProfile()
     }
 
     func translateText(_ text: String) async throws -> String {
         let configuration = TranslationConfiguration.load()
-        let key = try requiredKey()
+        let profile = try requiredProfile()
+        let key = try profileStore.apiKey(for: profile.id)
         return try await client.translateText(
-            baseURL: configuration.baseURL,
-            model: configuration.textModel,
+            baseURL: profile.baseURL,
+            model: profile.textModel,
             apiKey: key,
             text: text,
             sourceLanguage: configuration.sourceLanguage,
-            targetLanguage: configuration.targetLanguage
+            targetLanguage: configuration.targetLanguage,
+            provider: profile.providerKind
         )
     }
 
@@ -48,17 +64,19 @@ struct ScreenshotTranslationService: @unchecked Sendable {
         let usableLines = lines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard !usableLines.isEmpty else { throw ScreenshotTranslationServiceError.missingTextBoxes }
         let configuration = TranslationConfiguration.load()
-        let key = try requiredKey()
+        let profile = try requiredProfile()
+        let key = try profileStore.apiKey(for: profile.id)
         let segments = usableLines.enumerated().map {
             TranslationSourceSegment(id: $0.offset, text: $0.element.text)
         }
         let translated = try await client.translateSegments(
-            baseURL: configuration.baseURL,
-            model: configuration.textModel,
+            baseURL: profile.baseURL,
+            model: profile.textModel,
             apiKey: key,
             segments: segments,
             sourceLanguage: configuration.sourceLanguage,
-            targetLanguage: configuration.targetLanguage
+            targetLanguage: configuration.targetLanguage,
+            provider: profile.providerKind
         )
         let byID = Dictionary(uniqueKeysWithValues: translated.map { ($0.id, $0.text) })
         return usableLines.enumerated().compactMap { index, line in
@@ -74,48 +92,64 @@ struct ScreenshotTranslationService: @unchecked Sendable {
 
     func translateWithVision(image: CGImage) async throws -> String {
         let configuration = TranslationConfiguration.load()
-        let key = try requiredKey()
+        let profile = try requiredProfile()
+        let key = try profileStore.apiKey(for: profile.id)
         let imageData = try encodePNG(prepareOCRImage(image, maximumDimension: 2560))
         return try await client.translateImage(
-            baseURL: configuration.baseURL,
-            model: configuration.visionModel,
+            baseURL: profile.baseURL,
+            model: profile.visionModel,
             apiKey: key,
             imageData: imageData,
             sourceLanguage: configuration.sourceLanguage,
-            targetLanguage: configuration.targetLanguage
+            targetLanguage: configuration.targetLanguage,
+            provider: profile.providerKind
         )
     }
 
-    func testTextModel(apiKey: String? = nil) async throws -> String {
-        let configuration = TranslationConfiguration.load()
-        let key = try apiKey ?? requiredKey()
+    func testTextModel(profile: AIProviderProfile, apiKey: String? = nil) async throws -> String {
+        let key = try apiKey ?? profileStore.apiKey(for: profile.id)
         return try await client.testConnection(
-            baseURL: configuration.baseURL,
-            model: configuration.textModel,
-            apiKey: key
+            baseURL: profile.baseURL,
+            model: profile.textModel,
+            apiKey: key,
+            provider: profile.providerKind
         )
     }
 
-    func testVisionModel(apiKey: String? = nil) async throws -> String {
+    func testVisionModel(profile: AIProviderProfile, apiKey: String? = nil) async throws -> String {
         let image = try makeVisionTestImage()
-        let configuration = TranslationConfiguration.load()
-        let key = try apiKey ?? requiredKey()
+        let key = try apiKey ?? profileStore.apiKey(for: profile.id)
         let data = try encodePNG(image)
         return try await client.translateImage(
-            baseURL: configuration.baseURL,
-            model: configuration.visionModel,
+            baseURL: profile.baseURL,
+            model: profile.visionModel,
             apiKey: key,
             imageData: data,
             sourceLanguage: "英文",
-            targetLanguage: "简体中文"
+            targetLanguage: "简体中文",
+            provider: profile.providerKind
         )
     }
 
-    private func requiredKey() throws -> String {
-        guard let key = try secretStore.read(account: Self.keychainAccount), !key.isEmpty else {
-            throw TranslationProviderError.missingAPIKey
+    private func requiredProfile() throws -> AIProviderProfile {
+        let state = try profileStore.loadState()
+        if let selected = state.translationProfile,
+           profileStore.translationEligibility(of: selected) == nil {
+            return selected
         }
-        return key
+        let eligible = profileStore.eligibleTranslationProfiles(in: state)
+        if eligible.count == 1, let only = eligible.first {
+            _ = try profileStore.setTranslationProfile(id: only.id)
+            return only
+        }
+        if state.translationProfile != nil {
+            throw AIProviderProfileStoreError.translationIneligible(
+                "当前翻译模型缺少文字模型、视觉模型或 API Key，请到“AI 模型”中补全。"
+            )
+        }
+        throw AIProviderProfileStoreError.translationIneligible(
+            "请先到“AI 模型”配置一套带文字模型和视觉模型的服务，然后在翻译设置中选择它。"
+        )
     }
 
     private func encodePNG(_ image: CGImage) throws -> Data {

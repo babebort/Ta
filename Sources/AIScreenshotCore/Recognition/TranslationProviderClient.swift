@@ -8,6 +8,7 @@ public enum TranslationProviderError: LocalizedError, Equatable {
     case invalidResponse
     case emptyResponse
     case invalidSegmentResponse
+    case reasoningOnlyOutput(truncated: Bool)
     case server(statusCode: Int, message: String)
 
     public var errorDescription: String? {
@@ -19,6 +20,10 @@ public enum TranslationProviderError: LocalizedError, Equatable {
         case .invalidResponse: "翻译服务返回了无法解析的响应。"
         case .emptyResponse: "翻译模型没有返回内容。"
         case .invalidSegmentResponse: "翻译模型没有返回完整的分段结果，请重试。"
+        case .reasoningOnlyOutput(let truncated):
+            truncated
+                ? "模型把输出上限耗在思考过程里，还没生成正文就被截断了。请关闭该模型的深度思考，或调大输出上限后重试。"
+                : "模型只返回了思考过程，没有正文内容。请为该配置关闭深度思考后重试。"
         case .server(let statusCode, let message): "翻译服务错误（\(statusCode)）：\(message)"
         }
     }
@@ -37,7 +42,8 @@ public struct TranslationProviderClient: @unchecked Sendable {
         apiKey: String,
         text: String,
         sourceLanguage: String,
-        targetLanguage: String
+        targetLanguage: String,
+        provider: VisionProviderKind = .openAICompatible
     ) async throws -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw TranslationProviderError.emptyInput }
@@ -51,10 +57,11 @@ public struct TranslationProviderClient: @unchecked Sendable {
         </content>
         """
         return try await complete(
+            provider: provider,
             baseURL: baseURL,
             model: model,
             apiKey: apiKey,
-            content: [["type": "text", "text": prompt]],
+            prompt: prompt,
             jsonMode: false
         )
     }
@@ -65,7 +72,8 @@ public struct TranslationProviderClient: @unchecked Sendable {
         apiKey: String,
         segments: [TranslationSourceSegment],
         sourceLanguage: String,
-        targetLanguage: String
+        targetLanguage: String,
+        provider: VisionProviderKind = .openAICompatible
     ) async throws -> [TranslationSegmentResult] {
         guard !segments.isEmpty else { throw TranslationProviderError.emptyInput }
         let sourceData = try JSONEncoder().encode(segments)
@@ -79,10 +87,11 @@ public struct TranslationProviderClient: @unchecked Sendable {
         \(sourceJSON)
         """
         let response = try await complete(
+            provider: provider,
             baseURL: baseURL,
             model: model,
             apiKey: apiKey,
-            content: [["type": "text", "text": prompt]],
+            prompt: prompt,
             jsonMode: true
         )
         let decoded = try decodeSegments(response)
@@ -100,22 +109,22 @@ public struct TranslationProviderClient: @unchecked Sendable {
         imageData: Data,
         mimeType: String = "image/png",
         sourceLanguage: String,
-        targetLanguage: String
+        targetLanguage: String,
+        provider: VisionProviderKind = .openAICompatible
     ) async throws -> String {
         let prompt = """
         Read all visible text in this screenshot and translate it from \(sourceLanguage) to \(targetLanguage).
         Preserve reading order, paragraphs, lists, code, numbers, and names.
         Do not describe the image or explain. Output only the translated text.
         """
-        let dataURL = "data:\(mimeType);base64,\(imageData.base64EncodedString())"
         return try await complete(
+            provider: provider,
             baseURL: baseURL,
             model: model,
             apiKey: apiKey,
-            content: [
-                ["type": "text", "text": prompt],
-                ["type": "image_url", "image_url": ["url": dataURL]]
-            ],
+            prompt: prompt,
+            imageData: imageData,
+            mimeType: mimeType,
             jsonMode: false
         )
     }
@@ -123,23 +132,28 @@ public struct TranslationProviderClient: @unchecked Sendable {
     public func testConnection(
         baseURL: String,
         model: String,
-        apiKey: String
+        apiKey: String,
+        provider: VisionProviderKind = .openAICompatible
     ) async throws -> String {
         try await complete(
+            provider: provider,
             baseURL: baseURL,
             model: model,
             apiKey: apiKey,
-            content: [["type": "text", "text": "Reply with exactly: OK"]],
+            prompt: "Reply with exactly: OK",
             jsonMode: false,
-            maxTokens: 16
+            maxTokens: 512
         )
     }
 
     private func complete(
+        provider: VisionProviderKind,
         baseURL: String,
         model: String,
         apiKey: String,
-        content: [[String: Any]],
+        prompt: String,
+        imageData: Data? = nil,
+        mimeType: String = "image/png",
         jsonMode: Bool,
         maxTokens: Int = 4096
     ) async throws -> String {
@@ -147,26 +161,77 @@ public struct TranslationProviderClient: @unchecked Sendable {
         let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedModel.isEmpty else { throw TranslationProviderError.missingModel }
         guard !trimmedKey.isEmpty else { throw TranslationProviderError.missingAPIKey }
-        let endpoint = try endpointURL(from: baseURL)
+        let endpoint = try endpointURL(provider: provider, from: baseURL, model: trimmedModel)
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 120
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
-
-        var body: [String: Any] = [
-            "model": trimmedModel,
-            "messages": [["role": "user", "content": content]],
-            "temperature": 0,
-            "stream": false,
-            "max_tokens": maxTokens
-        ]
-        if endpoint.host?.lowercased().hasSuffix("deepseek.com") == true {
-            body["thinking"] = ["type": "disabled"]
-        }
-        if jsonMode {
-            body["response_format"] = ["type": "json_object"]
+        let body: [String: Any]
+        switch provider {
+        case .openAICompatible, .azureOpenAI:
+            if provider == .azureOpenAI {
+                request.setValue(trimmedKey, forHTTPHeaderField: "api-key")
+            } else {
+                request.setValue("Bearer \(trimmedKey)", forHTTPHeaderField: "Authorization")
+            }
+            let messageContent: Any
+            if let imageData {
+                var content: [[String: Any]] = [["type": "text", "text": prompt]]
+                let dataURL = "data:\(mimeType);base64,\(imageData.base64EncodedString())"
+                content.append(["type": "image_url", "image_url": ["url": dataURL]])
+                messageContent = content
+            } else {
+                // Text-only OpenAI-compatible models (notably GLM text models)
+                // expect the canonical string form. A multimodal parts array is
+                // reserved for requests that actually contain an image.
+                messageContent = prompt
+            }
+            var openAIBody: [String: Any] = [
+                "model": trimmedModel,
+                "messages": [["role": "user", "content": messageContent]],
+                "temperature": 0,
+                "stream": false,
+                "max_tokens": maxTokens
+            ]
+            OpenAIChatResponseSupport.applyThinkingPreference(to: &openAIBody, host: endpoint.host)
+            if jsonMode { openAIBody["response_format"] = ["type": "json_object"] }
+            body = openAIBody
+        case .anthropic:
+            request.setValue(trimmedKey, forHTTPHeaderField: "x-api-key")
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            var content: [[String: Any]] = []
+            if let imageData {
+                content.append([
+                    "type": "image",
+                    "source": [
+                        "type": "base64",
+                        "media_type": mimeType,
+                        "data": imageData.base64EncodedString()
+                    ]
+                ])
+            }
+            content.append(["type": "text", "text": prompt])
+            body = [
+                "model": trimmedModel,
+                "max_tokens": maxTokens,
+                "temperature": 0,
+                "messages": [["role": "user", "content": content]]
+            ]
+        case .googleGemini:
+            request.setValue(trimmedKey, forHTTPHeaderField: "x-goog-api-key")
+            var parts: [[String: Any]] = []
+            if let imageData {
+                parts.append(["inlineData": [
+                    "mimeType": mimeType,
+                    "data": imageData.base64EncodedString()
+                ]])
+            }
+            parts.append(["text": prompt])
+            body = [
+                "contents": [["parts": parts]],
+                "generationConfig": ["temperature": 0, "maxOutputTokens": maxTokens]
+            ]
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -180,17 +245,32 @@ public struct TranslationProviderClient: @unchecked Sendable {
                 message: errorMessage(from: data) ?? HTTPURLResponse.localizedString(forStatusCode: http.statusCode)
             )
         }
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let choices = object["choices"] as? [[String: Any]],
-              let message = choices.first?["message"] as? [String: Any],
-              let text = responseText(from: message["content"]),
-              !text.isEmpty else {
-            throw TranslationProviderError.emptyResponse
+        let parsedObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        if let text = parsedObject.flatMap({ responseText(provider: provider, object: $0) }), !text.isEmpty {
+            return text
         }
-        return text
+        if let parsedObject, let detailedError = reasoningOutcome(provider: provider, object: parsedObject) {
+            throw detailedError
+        }
+        throw TranslationProviderError.emptyResponse
     }
 
-    private func endpointURL(from rawValue: String) throws -> URL {
+    private func reasoningOutcome(
+        provider: VisionProviderKind,
+        object: [String: Any]
+    ) -> TranslationProviderError? {
+        guard provider == .openAICompatible || provider == .azureOpenAI,
+              OpenAIChatResponseSupport.reasoningText(in: object)?.isEmpty == false else {
+            return nil
+        }
+        return .reasoningOnlyOutput(truncated: OpenAIChatResponseSupport.isLengthTruncated(object))
+    }
+
+    private func endpointURL(
+        provider: VisionProviderKind,
+        from rawValue: String,
+        model: String
+    ) throws -> URL {
         let trimmed = rawValue
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "，,"))
@@ -204,12 +284,49 @@ public struct TranslationProviderClient: @unchecked Sendable {
             throw TranslationProviderError.invalidEndpoint("翻译 API 地址格式无效。")
         }
         let path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        if path.hasSuffix("chat/completions") { return components.url! }
-        components.path = "/" + [path, "chat/completions"].filter { !$0.isEmpty }.joined(separator: "/")
+        switch provider {
+        case .openAICompatible:
+            if !path.hasSuffix("chat/completions") {
+                components.path = "/" + [path, "chat/completions"].filter { !$0.isEmpty }.joined(separator: "/")
+            }
+        case .azureOpenAI:
+            if !path.hasSuffix("chat/completions") {
+                components.path = "/" + [path, "openai/v1/chat/completions"].filter { !$0.isEmpty }.joined(separator: "/")
+            }
+        case .anthropic:
+            if !path.hasSuffix("v1/messages") {
+                components.path = "/" + [path, "v1/messages"].filter { !$0.isEmpty }.joined(separator: "/")
+            }
+        case .googleGemini:
+            if !path.contains(":generateContent") {
+                components.path = "/" + [path, "v1beta/models/\(model):generateContent"].filter { !$0.isEmpty }.joined(separator: "/")
+            }
+        }
         guard let url = components.url else {
             throw TranslationProviderError.invalidEndpoint("翻译 API 地址格式无效。")
         }
         return url
+    }
+
+    private func responseText(provider: VisionProviderKind, object: [String: Any]) -> String? {
+        switch provider {
+        case .openAICompatible, .azureOpenAI:
+            let choices = object["choices"] as? [[String: Any]]
+            let message = choices?.first?["message"] as? [String: Any]
+            return responseText(from: message?["content"])
+        case .anthropic:
+            return (object["content"] as? [[String: Any]])?
+                .compactMap { $0["text"] as? String }
+                .joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        case .googleGemini:
+            guard let candidate = (object["candidates"] as? [[String: Any]])?.first,
+                  let content = candidate["content"] as? [String: Any],
+                  let parts = content["parts"] as? [[String: Any]] else { return nil }
+            return parts.compactMap { $0["text"] as? String }
+                .joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
     }
 
     private func responseText(from content: Any?) -> String? {

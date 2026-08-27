@@ -175,7 +175,7 @@ final class PinnedImageWindowController {
             guard let self, let panel,
                   let record = records.first(where: { $0.id == id }) else { return }
             closedPins.append(ClosedPin(image: record.sourceImage, frame: panel.frame))
-            if closedPins.count > 20 { closedPins.removeFirst() }
+            if closedPins.count > 3 { closedPins.removeFirst() }
             panel.orderOut(nil)
             records.removeAll { $0.id == id }
         }
@@ -242,9 +242,15 @@ final class PinnedImageWindowController {
     }
 }
 
-private final class PinnedImagePanel: NSPanel {
+final class PinnedImagePanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        // NSWindow normally clamps borderless windows below the menu bar. A pin
+        // behaves like a free canvas object, so preserve the user's exact drag.
+        frameRect
+    }
 }
 
 enum PinnedImageInteraction {

@@ -207,8 +207,8 @@ final class InlineAnnotationController: NSObject {
         canvas.onTextSizeChanged = { [weak textSize] value in textSize?.selectItem(withTag: Int(value)) }
 
         stack.addArrangedSubview(separator())
-        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.backward", tooltip: "撤销 ⌘Z", target: canvas, action: #selector(AnnotationCanvasView.undo)))
-        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.forward", tooltip: "重做 ⇧⌘Z", target: canvas, action: #selector(AnnotationCanvasView.redo)))
+        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.backward", tooltip: "撤销 ⌘Z", target: canvas, action: #selector(AnnotationCanvasView.undo(_:))))
+        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.forward", tooltip: "重做 ⇧⌘Z", target: canvas, action: #selector(AnnotationCanvasView.redo(_:))))
 
         stack.addArrangedSubview(separator())
         stack.addArrangedSubview(iconButton(symbol: "doc.on.doc", tooltip: "复制并结束", action: #selector(copyAndFinish)))

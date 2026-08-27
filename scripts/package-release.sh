@@ -15,6 +15,7 @@ CHECKSUM_PATH="$RELEASE_DIR/SHA256SUMS.txt"
 CLI_ARCHIVE_PATH="$RELEASE_DIR/Ta-CLI-$VERSION-macOS-universal.tar.gz"
 SKILL_ARCHIVE_PATH="$RELEASE_DIR/Ta-Agent-Skill-$VERSION.zip"
 DSH_ARCHIVE_PATH="$RELEASE_DIR/dsh-ta-$VERSION.tgz"
+INSTALLER_PATH="$RELEASE_DIR/install.sh"
 
 PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
 if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
@@ -46,6 +47,8 @@ cp "$INFO_PLIST" "$APP_BUNDLE_DIR/Contents/Info.plist"
 cp "$PROJECT_ROOT_DIR/Resources/Ta.icns" "$APP_BUNDLE_DIR/Contents/Resources/Ta.icns"
 cp "$PROJECT_ROOT_DIR/Resources/Brand/Ta-AppIcon.png" \
     "$APP_BUNDLE_DIR/Contents/Resources/Brand/Ta-AppIcon.png"
+cp -R "$PROJECT_ROOT_DIR/Resources/Brand/Providers" \
+    "$APP_BUNDLE_DIR/Contents/Resources/Brand/Providers"
 chmod 755 "$APP_BUNDLE_DIR/Contents/MacOS/$EXECUTABLE_NAME"
 
 plutil -lint "$APP_BUNDLE_DIR/Contents/Info.plist"
@@ -90,6 +93,8 @@ ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE_DIR" "$ZIP_PATH"
 "$PROJECT_ROOT_DIR/scripts/package-ta-cli.sh" "$VERSION" "$RELEASE_DIR"
 "$PROJECT_ROOT_DIR/scripts/package-ta-skill.sh" "$VERSION" "$RELEASE_DIR"
 "$PROJECT_ROOT_DIR/scripts/package-dsh-ta.sh" "$VERSION" "$RELEASE_DIR"
+cp "$PROJECT_ROOT_DIR/scripts/install.sh" "$INSTALLER_PATH"
+chmod 755 "$INSTALLER_PATH"
 
 (
     cd "$RELEASE_DIR"
@@ -99,6 +104,7 @@ ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE_DIR" "$ZIP_PATH"
         "${CLI_ARCHIVE_PATH:t}" \
         "${SKILL_ARCHIVE_PATH:t}" \
         "${DSH_ARCHIVE_PATH:t}" \
+        "${INSTALLER_PATH:t}" \
         > "${CHECKSUM_PATH:t}"
 )
 
@@ -109,5 +115,6 @@ ls -lh \
     "$CLI_ARCHIVE_PATH" \
     "$SKILL_ARCHIVE_PATH" \
     "$DSH_ARCHIVE_PATH" \
+    "$INSTALLER_PATH" \
     "$CHECKSUM_PATH"
 cat "$CHECKSUM_PATH"

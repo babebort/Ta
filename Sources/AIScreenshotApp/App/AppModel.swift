@@ -87,6 +87,16 @@ final class AppModel: ObservableObject {
                     self?.statusText = "本地识别就绪"
                 }
             }
+        } else if arguments.contains("--ui-smoke-result-bar-success") {
+            Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(180))
+                self?.captureCoordinator.openResultBarSmokeFixture(kind: .success)
+            }
+        } else if arguments.contains("--ui-smoke-result-bar-failure") {
+            Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(180))
+                self?.captureCoordinator.openResultBarSmokeFixture(kind: .failure)
+            }
         } else if arguments.contains("--ui-smoke-editor") {
             Task { [weak self] in
                 try? await Task.sleep(for: .milliseconds(180))
@@ -165,7 +175,7 @@ final class AppModel: ObservableObject {
         case .translation: "选择需要翻译的区域"
         case .image: "选择要复制的区域"
         case .pin: "选择要钉住的区域"
-        case .long: "选择滚动区域"
+        case .long: "从起点框到滚动区域底部"
         }
 
         captureCoordinator.start(mode: mode) { [weak self] outcome in

@@ -19,8 +19,59 @@ enum ScreenCaptureError: LocalizedError {
     }
 }
 
+enum FrozenDisplayCropper {
+    static func pixelRect(
+        for selection: CaptureSelection,
+        imageWidth: Int,
+        imageHeight: Int
+    ) -> CGRect {
+        let clipped = selection.globalRect.intersection(selection.screenFrame)
+        guard clipped.width >= 1,
+              clipped.height >= 1,
+              selection.screenFrame.width > 0,
+              selection.screenFrame.height > 0,
+              imageWidth > 0,
+              imageHeight > 0 else {
+            return .null
+        }
+
+        let scaleX = CGFloat(imageWidth) / selection.screenFrame.width
+        let scaleY = CGFloat(imageHeight) / selection.screenFrame.height
+        let localX = clipped.minX - selection.screenFrame.minX
+        let localTop = selection.screenFrame.maxY - clipped.maxY
+        let pixels = CGRect(
+            x: localX * scaleX,
+            y: localTop * scaleY,
+            width: clipped.width * scaleX,
+            height: clipped.height * scaleY
+        ).integral
+        return pixels.intersection(
+            CGRect(x: 0, y: 0, width: imageWidth, height: imageHeight)
+        )
+    }
+
+    static func crop(_ image: CGImage, to selection: CaptureSelection) throws -> CGImage {
+        let pixelRect = pixelRect(
+            for: selection,
+            imageWidth: image.width,
+            imageHeight: image.height
+        )
+        guard !pixelRect.isNull,
+              pixelRect.width >= 1,
+              pixelRect.height >= 1,
+              let cropped = image.cropping(to: pixelRect) else {
+            throw ScreenCaptureError.invalidSelection
+        }
+        return cropped
+    }
+}
+
 struct ScreenCaptureService: Sendable {
     func capture(_ selection: CaptureSelection) async throws -> CGImage {
+        if let frozenDisplayImage = selection.frozenDisplayImage {
+            return try FrozenDisplayCropper.crop(frozenDisplayImage, to: selection)
+        }
+
         let screenFrame = selection.screenFrame
         let clipped = selection.globalRect.intersection(screenFrame)
         guard clipped.width >= 1, clipped.height >= 1 else {
@@ -81,6 +132,7 @@ struct ScreenCaptureService: Sendable {
 
     func captureWindow(
         windowID: CGWindowID,
+        pixelScale: CGFloat,
         showsCursor: Bool = false
     ) async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(
@@ -90,10 +142,6 @@ struct ScreenCaptureService: Sendable {
         guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
             throw ScreenCaptureError.windowUnavailable
         }
-        let pixelScale = content.displays
-            .filter { $0.frame.intersects(window.frame) && $0.frame.width > 0 }
-            .map { CGFloat($0.width) / $0.frame.width }
-            .max() ?? 1
         let filter = SCContentFilter(desktopIndependentWindow: window)
         let configuration = Self.configuration(
             size: window.frame.size,

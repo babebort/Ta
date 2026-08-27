@@ -75,6 +75,14 @@ final class MultimodalProviderClientTests: XCTestCase {
         XCTAssertTrue(MultimodalTaskTemplate.translateChinese.prompt.contains("中文"))
     }
 
+    func testGeneralTaskDescribesVisualContentEvenWhenThereIsNoText() {
+        let prompt = MultimodalTaskTemplate.general.prompt
+        XCTAssertTrue(prompt.contains("视觉理解任务"))
+        XCTAssertTrue(prompt.contains("动物"))
+        XCTAssertTrue(prompt.contains("即使图片完全没有文字"))
+        XCTAssertTrue(prompt.contains("不能只回答“没有文字”"))
+    }
+
     private func makeClient() -> MultimodalProviderClient {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [ProviderURLProtocol.self]

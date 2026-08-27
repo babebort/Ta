@@ -61,7 +61,7 @@ export interface TaRequest {
   params: Record<string, JSONValue>
   client: {
     name: 'dsh-ta'
-    version: '1.0.0'
+    version: '1.0.1'
   }
 }
 

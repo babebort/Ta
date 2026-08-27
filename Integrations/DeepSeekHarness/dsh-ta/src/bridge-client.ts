@@ -34,7 +34,7 @@ export class TaBridgeClient {
       requestId: options.requestId ?? createRequestId(),
       method,
       params,
-      client: { name: 'dsh-ta', version: '1.0.0' },
+      client: { name: 'dsh-ta', version: '1.0.1' },
     }
     try {
       return await this.requestOnce(request, options.signal)

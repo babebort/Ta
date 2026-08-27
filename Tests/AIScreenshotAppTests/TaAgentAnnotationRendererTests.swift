@@ -5,6 +5,27 @@ import TaAgentContracts
 
 @Suite("Ta Agent annotation renderer")
 struct TaAgentAnnotationRendererTests {
+    @Test("arrow uses the same filled tapered geometry as the native editor")
+    func arrowMatchesNativeEditorGeometry() throws {
+        let source = try solidImage(width: 120, height: 90, color: CGColor(gray: 1, alpha: 1))
+        let operation = AnnotationArrowOperation(
+            id: "arrow",
+            start: .init(x: 10, y: 45),
+            end: .init(x: 110, y: 45),
+            color: .red,
+            lineWidth: 6
+        )
+
+        let rendered = try TaAgentAnnotationRenderer().render(
+            sourceImage: source,
+            cropRect: nil,
+            elements: [.arrow(operation)]
+        )
+        let expected = try nativeArrowImage(source: source, operation: operation)
+
+        #expect(pixelDigest(rendered) == pixelDigest(expected))
+    }
+
     @Test("crop changes the output pixel dimensions")
     func cropChangesDimensions() throws {
         var session = TaAgentAnnotationSession(sourceImage: try fixtureImage(width: 120, height: 90))
@@ -42,6 +63,58 @@ struct TaAgentAnnotationRendererTests {
         .blur(.init(id: "blur", rect: .init(x: 8, y: 8, width: 60, height: 40), radius: 8)),
         .magnify(.init(id: "magnify", rect: .init(x: 50, y: 20, width: 50, height: 50), factor: 2))
     ]
+}
+
+private func solidImage(width: Int, height: Int, color: CGColor) throws -> CGImage {
+    guard let context = CGContext(
+        data: nil,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: width * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else { throw AnnotationTestError.context }
+    context.setFillColor(color)
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    guard let image = context.makeImage() else { throw AnnotationTestError.image }
+    return image
+}
+
+private func nativeArrowImage(
+    source: CGImage,
+    operation: AnnotationArrowOperation
+) throws -> CGImage {
+    guard let context = CGContext(
+        data: nil,
+        width: source.width,
+        height: source.height,
+        bitsPerComponent: 8,
+        bytesPerRow: source.width * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else { throw AnnotationTestError.context }
+    context.setShouldAntialias(true)
+    context.setAllowsAntialiasing(true)
+    context.draw(source, in: CGRect(x: 0, y: 0, width: source.width, height: source.height))
+    let start = CGPoint(x: operation.start.x, y: Double(source.height) - operation.start.y)
+    let end = CGPoint(x: operation.end.x, y: Double(source.height) - operation.end.y)
+    let points = TaperedArrowGeometry.polygon(from: start, to: end, width: operation.lineWidth)
+    guard let first = points.first else { throw AnnotationTestError.image }
+    let path = CGMutablePath()
+    path.move(to: first)
+    points.dropFirst().forEach { path.addLine(to: $0) }
+    path.closeSubpath()
+    context.addPath(path)
+    context.setFillColor(CGColor(
+        red: operation.color.red,
+        green: operation.color.green,
+        blue: operation.color.blue,
+        alpha: operation.color.alpha
+    ))
+    context.fillPath()
+    guard let image = context.makeImage() else { throw AnnotationTestError.image }
+    return image
 }
 
 func fixtureImage(width: Int, height: Int) throws -> CGImage {

@@ -102,6 +102,20 @@ final class CaptureCoordinator {
         }
     }
 
+    func openResultBarSmokeFixture(kind: ResultBarKind) {
+        let state = switch kind {
+        case .processing:
+            ResultBarState(kind: .processing, title: "正在识别图片…", detail: "本地处理，不会上传")
+        case .success:
+            ResultBarState(kind: .success, title: "已复制图片", detail: "910 × 358")
+        case .warning:
+            ResultBarState(kind: .warning, title: "已复制，部分文字可能有误", detail: "请检查识别结果")
+        case .failure:
+            ResultBarState(kind: .failure, title: "复制失败", detail: "剪贴板被其他应用占用")
+        }
+        resultBar.show(state, autoHide: false, dismissalOverrideSeconds: 60)
+    }
+
     private func makeSmokeFixtureImage() -> CGImage? {
         guard let representation = NSBitmapImageRep(
             bitmapDataPlanes: nil, pixelsWide: 1000, pixelsHigh: 620,
@@ -140,26 +154,62 @@ final class CaptureCoordinator {
         latestJobID = jobID
         let initialChangeCount = clipboardService.changeCount
         let configuredAction = action(for: mode)
+        guard let overlayContext = selectionOverlay.prepareStartContext() else {
+            completion(.failed("找不到显示器"))
+            return
+        }
 
-        selectionOverlay.begin(showsActionToolbar: configuredAction == nil) { [weak self] selection, selectedAction in
+        // Change the pointer as soon as the shortcut is handled. The overlay is
+        // shown only after the full display frame has been captured, so the user
+        // always selects from the shortcut-time image rather than a live page.
+        NSCursor.crosshair.set()
+        processingTask = Task { [weak self] in
             guard let self else { return }
-            guard let selection else {
-                completion(.cancelled)
-                return
-            }
-
-            let action = selectedAction ?? configuredAction ?? .copyImage
-            UserDefaults.standard.set(action.rawValue, forKey: "lastPostCaptureQuickAction")
-
-            processingTask = Task { [weak self] in
-                guard let self else { return }
-                await process(
-                    jobID: jobID,
-                    action: action,
-                    selection: selection,
-                    initialChangeCount: initialChangeCount,
-                    completion: completion
+            do {
+                let frozenDisplayImage = try await captureService.captureDisplay(
+                    displayID: overlayContext.displayID,
+                    pixelScale: overlayContext.screen.backingScaleFactor,
+                    showsCursor: false
                 )
+                try Task.checkCancellation()
+                guard latestJobID == jobID else { return }
+
+                selectionOverlay.begin(
+                    context: overlayContext,
+                    frozenDisplayImage: frozenDisplayImage,
+                    showsActionToolbar: configuredAction == nil
+                ) { [weak self] selection, selectedAction in
+                    guard let self else { return }
+                    guard let selection else {
+                        completion(.cancelled)
+                        return
+                    }
+
+                    let action = selectedAction ?? configuredAction ?? .copyImage
+                    UserDefaults.standard.set(action.rawValue, forKey: "lastPostCaptureQuickAction")
+
+                    processingTask = Task { [weak self] in
+                        guard let self else { return }
+                        await process(
+                            jobID: jobID,
+                            action: action,
+                            selection: selection,
+                            initialChangeCount: initialChangeCount,
+                            completion: completion
+                        )
+                    }
+                }
+            } catch is CancellationError {
+                NSCursor.arrow.set()
+                completion(.cancelled)
+            } catch {
+                NSCursor.arrow.set()
+                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                resultBar.show(
+                    ResultBarState(kind: .failure, title: "截图准备失败", detail: message),
+                    autoHide: false
+                )
+                completion(.failed("截图准备失败"))
             }
         }
     }
@@ -280,7 +330,7 @@ final class CaptureCoordinator {
                             ResultBarState(
                                 kind: .success,
                                 title: "AI 识图结果已复制",
-                                detail: "\(text.count) 个字符 · \(UserDefaults.standard.string(forKey: "providerVisionModel") ?? "视觉模型")"
+                                detail: "\(text.count) 个字符 · \(multimodalRecognitionService.activeVisionModelName)"
                             ),
                             autoHide: true
                         )
@@ -620,9 +670,7 @@ final class CaptureCoordinator {
         jobID: UUID,
         completion: @escaping (CaptureOutcome) -> Void
     ) async throws {
-        guard translationService.isConfigured else {
-            throw TranslationProviderError.missingAPIKey
-        }
+        try translationService.validateConfiguration()
         let configuration = TranslationConfiguration.load()
         resultBar.show(
             ResultBarState(
@@ -633,11 +681,38 @@ final class CaptureCoordinator {
             autoHide: false
         )
 
-        let ocrResult = try await translationOCR.recognize(
-            image: image,
-            languages: [],
-            mergeWrappedLines: false
-        )
+        let ocrResult: OCRResult
+        do {
+            ocrResult = try await translationOCR.recognize(
+                image: image,
+                languages: [],
+                mergeWrappedLines: false
+            )
+        } catch let error as CancellationError {
+            throw error
+        } catch {
+            guard mode == .textOnly, configuration.usesVisionFallback else {
+                throw ScreenshotTranslationServiceError.localOCRUnavailableForImage
+            }
+            resultBar.show(
+                ResultBarState(
+                    kind: .processing,
+                    title: "本地识别不可用，正在切换视觉模型…",
+                    detail: "仅上传本次主动框选的图片"
+                ),
+                autoHide: false
+            )
+            let translated = try await translationService.translateWithVision(image: image)
+            try Task.checkCancellation()
+            finishTextTranslation(
+                translated,
+                configuration: configuration,
+                initialChangeCount: initialChangeCount,
+                jobID: jobID,
+                completion: completion
+            )
+            return
+        }
         try Task.checkCancellation()
 
         if mode == .textOnly {
@@ -660,31 +735,20 @@ final class CaptureCoordinator {
                     ResultBarState(
                         kind: .processing,
                         title: "正在翻译文字…",
-                        detail: "\(configuration.sourceLanguage) → \(configuration.targetLanguage) · \(configuration.textModel)"
+                        detail: "\(configuration.sourceLanguage) → \(configuration.targetLanguage) · \(translationService.selectedTextModelName)"
                     ),
                     autoHide: false
                 )
                 translated = try await translationService.translateText(ocrResult.text)
             }
             try Task.checkCancellation()
-            let committed = clipboardService.copyText(
+            finishTextTranslation(
                 translated,
+                configuration: configuration,
                 initialChangeCount: initialChangeCount,
-                jobIsLatest: latestJobID == jobID
+                jobID: jobID,
+                completion: completion
             )
-            guard committed else {
-                showClipboardChanged(completion: completion)
-                return
-            }
-            resultBar.show(
-                ResultBarState(
-                    kind: .success,
-                    title: "翻译结果已复制",
-                    detail: "\(translated.count) 个字符 · \(configuration.targetLanguage)"
-                ),
-                autoHide: true
-            )
-            completion(.completed("翻译结果已复制"))
             return
         }
 
@@ -696,7 +760,7 @@ final class CaptureCoordinator {
             ResultBarState(
                 kind: .processing,
                 title: "正在批量翻译 \(lines.count) 个文字区域…",
-                detail: "使用 \(configuration.textModel)，原图不会发送给文字模型"
+                detail: "使用 \(translationService.selectedTextModelName)，原图不会发送给文字模型"
             ),
             autoHide: false
         )
@@ -726,6 +790,33 @@ final class CaptureCoordinator {
         completion(.completed("已生成\(modeName)"))
     }
 
+    private func finishTextTranslation(
+        _ translated: String,
+        configuration: TranslationConfiguration,
+        initialChangeCount: Int,
+        jobID: UUID,
+        completion: @escaping (CaptureOutcome) -> Void
+    ) {
+        let committed = clipboardService.copyText(
+            translated,
+            initialChangeCount: initialChangeCount,
+            jobIsLatest: latestJobID == jobID
+        )
+        guard committed else {
+            showClipboardChanged(completion: completion)
+            return
+        }
+        resultBar.show(
+            ResultBarState(
+                kind: .success,
+                title: "翻译结果已复制",
+                detail: "\(translated.count) 个字符 · \(configuration.targetLanguage)"
+            ),
+            autoHide: true
+        )
+        completion(.completed("翻译结果已复制"))
+    }
+
     private func startLongCapture(completion: @escaping (CaptureOutcome) -> Void) {
         let jobID = UUID()
         latestJobID = jobID
@@ -744,7 +835,7 @@ final class CaptureCoordinator {
                 ResultBarState(
                     kind: .processing,
                     title: "长截图已开始",
-                    detail: "可手动上下滚动或按需自动滚动，完成后检查接缝"
+                    detail: "以选区顶部为起点，拓会自动锁定滚动区域并持续采集到底部"
                 ),
                 autoHide: true
             )

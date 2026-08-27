@@ -5,6 +5,54 @@ import TaAgentContracts
 
 @Suite("Ta Agent privacy settings and audit")
 struct AgentSettingsTests {
+    @Test("one-line installer uses the published latest release asset")
+    func installerCommand() {
+        #expect(!TaAgentInstallationGuide.installCommand.contains("\n"))
+        #expect(TaAgentInstallationGuide.installCommand.hasPrefix("curl -fsSL --retry 3"))
+        #expect(TaAgentInstallationGuide.installCommand.contains("--retry-all-errors"))
+        #expect(TaAgentInstallationGuide.installCommand.contains("/releases/latest/download/install.sh"))
+        #expect(TaAgentInstallationGuide.installCommand.hasSuffix("| bash"))
+    }
+
+    @Test("agent prompt installs, verifies, and preserves API key boundaries")
+    func agentInstallerPrompt() {
+        #expect(TaAgentInstallationGuide.agentPrompt.contains(TaAgentInstallationGuide.installCommand))
+        #expect(TaAgentInstallationGuide.agentPrompt.contains("~/.local/bin/ta status --json"))
+        #expect(TaAgentInstallationGuide.agentPrompt.contains("data.bridge 为 ready"))
+        #expect(TaAgentInstallationGuide.agentPrompt.contains("不要索要、读取或输出任何 API Key"))
+    }
+
+    @Test("installation status finds executable CLI and common skill locations")
+    func installationStatusDetection() throws {
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let cli = root.appendingPathComponent(".local/bin/ta")
+        let codexSkill = root.appendingPathComponent(".codex/skills/ta/SKILL.md")
+        let genericSkill = root.appendingPathComponent(".agents/skills/ta/SKILL.md")
+        try FileManager.default.createDirectory(
+            at: cli.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("#!/bin/sh\n".utf8).write(to: cli)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: cli.path
+        )
+        for skill in [codexSkill, genericSkill] {
+            try FileManager.default.createDirectory(
+                at: skill.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try Data("---\nname: ta\n---\n".utf8).write(to: skill)
+        }
+
+        let status = TaAgentToolInstallationStatus.detect(homeDirectory: root)
+
+        #expect(status.cliInstalled)
+        #expect(status.skillInstalled)
+        #expect(status.installedSkillLocations.count == 2)
+    }
+
     @Test("privacy defaults allow silent local automation without weakening cloud policy")
     func privacyDefaults() throws {
         let suite = "ta-agent-settings-\(UUID().uuidString)"

@@ -66,6 +66,47 @@ final class OpenAICompatibleVisionClientTests: XCTestCase {
         return OpenAICompatibleVisionClient(session: URLSession(configuration: configuration))
     }
 
+    func testZhipuVisionDisablesThinkingAndReasoningOnlyErrorIncludesGuidance() async throws {
+        VisionURLProtocol.handler = { request in
+            XCTAssertTrue(request.url?.host?.hasSuffix("bigmodel.cn") == true)
+            let bodyData = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: bodyData) as? [String: Any])
+            XCTAssertEqual((json["thinking"] as? [String: Any])?["type"] as? String, "disabled")
+            XCTAssertEqual(json["max_tokens"] as? Int, 4096)
+            let payload: [String: Any] = [
+                "choices": [[
+                    "message": [
+                        "content": "",
+                        "reasoning_content": "Inspecting layout and text regions first..."
+                    ],
+                    "finish_reason": "length"
+                ]]
+            ]
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(try! JSONSerialization.data(withJSONObject: payload)))
+        }
+
+        do {
+            _ = try await makeClient().recognize(
+                baseURL: "https://open.bigmodel.cn/api/paas/v4",
+                model: "glm-4.5v",
+                apiKey: "secret",
+                imageData: Data([1]),
+                prompt: "识别图片"
+            )
+            XCTFail("Expected reasoning-only error")
+        } catch let error as VisionClientError {
+            XCTAssertEqual(error, .reasoningOnlyOutput(truncated: true))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     private static func bodyData(from request: URLRequest) -> Data? {
         if let body = request.httpBody { return body }
         guard let stream = request.httpBodyStream else { return nil }

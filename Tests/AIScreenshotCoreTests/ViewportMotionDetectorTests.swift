@@ -37,6 +37,19 @@ final class ViewportMotionDetectorTests: XCTestCase {
         XCTAssertTrue(measurement.isStationary)
     }
 
+    func testSparseTextBandMovementIsNotMistakenForBottom() throws {
+        let detector = ViewportMotionDetector()
+        try detector.commit(makeSparseTextImage(width: 180, height: 240, lineY: 100))
+
+        let measurement = try detector.compare(
+            makeSparseTextImage(width: 180, height: 240, lineY: 120)
+        )
+
+        XCTAssertFalse(measurement.isStationary)
+        XCTAssertGreaterThan(measurement.meanAbsoluteDifference, 2.8)
+        XCTAssertLessThan(measurement.changedPixelFraction, 0.025)
+    }
+
     private func makeImage(
         width: Int,
         height: Int,
@@ -52,6 +65,37 @@ final class ViewportMotionDetectorTests: XCTestCase {
                 pixels[offset] = UInt8((sourceY * 17 + x * 11) % 256)
                 pixels[offset + 1] = UInt8((sourceY * 7 + x * 19) % 256)
                 pixels[offset + 2] = UInt8((sourceY * 23 + x * 3) % 256)
+                pixels[offset + 3] = 255
+            }
+        }
+        guard let provider = CGDataProvider(data: Data(pixels) as CFData),
+              let image = CGImage(
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bitsPerPixel: 32,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+                    .union(.byteOrder32Big),
+                provider: provider,
+                decode: nil,
+                shouldInterpolate: false,
+                intent: .defaultIntent
+              ) else {
+            throw MotionDetectorTestError.couldNotCreateImage
+        }
+        return image
+    }
+
+    private func makeSparseTextImage(width: Int, height: Int, lineY: Int) throws -> CGImage {
+        var pixels = [UInt8](repeating: 255, count: width * height * 4)
+        for y in lineY..<(lineY + 2) {
+            for x in 16..<(width - 16) {
+                let offset = (y * width + x) * 4
+                pixels[offset] = 0
+                pixels[offset + 1] = 0
+                pixels[offset + 2] = 0
                 pixels[offset + 3] = 255
             }
         }

@@ -42,7 +42,9 @@ public enum MultimodalTaskTemplate: String, CaseIterable, Codable, Sendable {
     public var prompt: String {
         switch self {
         case .general:
-            "请准确识别并整理截图中的主要内容，保留原语言、段落、列表、代码和表格结构。直接输出结果，不要猜测看不清的内容。"
+            """
+            这是视觉理解任务，不是单纯的文字识别。请先描述图片中实际可见的主体、人物或动物、物体、场景、动作、颜色与构图；即使图片完全没有文字，也必须说明画面内容，不能只回答“没有文字”。如果图片包含文字，再准确整理文字，并保留原语言、段落、列表、代码和表格结构。直接输出结果，不要猜测看不清的内容。
+            """
         case .extractText:
             "逐字提取截图中的全部可见文字，保持阅读顺序、段落和换行；不要总结、翻译或补写。"
         case .translateChinese:
@@ -104,7 +106,13 @@ public struct MultimodalProviderClient: @unchecked Sendable {
         switch provider {
         case .azureOpenAI:
             request.setValue(trimmedKey, forHTTPHeaderField: "api-key")
-            body = openAIChatBody(model: trimmedModel, dataURL: "data:\(mimeType);base64,\(base64)", prompt: prompt)
+            var azureBody = openAIChatBody(
+                model: trimmedModel,
+                dataURL: "data:\(mimeType);base64,\(base64)",
+                prompt: prompt
+            )
+            OpenAIChatResponseSupport.applyThinkingPreference(to: &azureBody, host: endpoint.host)
+            body = azureBody
         case .anthropic:
             request.setValue(trimmedKey, forHTTPHeaderField: "x-api-key")
             request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
@@ -143,11 +151,19 @@ public struct MultimodalProviderClient: @unchecked Sendable {
                 message: errorMessage(from: data) ?? HTTPURLResponse.localizedString(forStatusCode: http.statusCode)
             )
         }
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let text = responseText(provider: provider, object: object), !text.isEmpty else {
-            throw VisionClientError.emptyResponse
+        let parsedObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        if let text = parsedObject.flatMap({ responseText(provider: provider, object: $0) }), !text.isEmpty {
+            return text
         }
-        return text
+        if let parsedObject, let reasoningError = visionReasoningOutcome(object: parsedObject) {
+            throw reasoningError
+        }
+        throw VisionClientError.emptyResponse
+    }
+
+    private func visionReasoningOutcome(object: [String: Any]) -> VisionClientError? {
+        guard OpenAIChatResponseSupport.reasoningText(in: object)?.isEmpty == false else { return nil }
+        return .reasoningOnlyOutput(truncated: OpenAIChatResponseSupport.isLengthTruncated(object))
     }
 
     private func endpoint(provider: VisionProviderKind, baseURL: String, model: String) throws -> URL {
@@ -195,7 +211,7 @@ public struct MultimodalProviderClient: @unchecked Sendable {
     private func responseText(provider: VisionProviderKind, object: [String: Any]) -> String? {
         switch provider {
         case .azureOpenAI:
-            return ((object["choices"] as? [[String: Any]])?.first?["message"] as? [String: Any])?["content"] as? String
+            return OpenAIChatResponseSupport.contentText(in: object)
         case .anthropic:
             return (object["content"] as? [[String: Any]])?
                 .compactMap { $0["text"] as? String }.joined(separator: "\n")

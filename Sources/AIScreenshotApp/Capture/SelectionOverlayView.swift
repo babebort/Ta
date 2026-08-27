@@ -180,6 +180,7 @@ final class CaptureActionButton: NSButton {
     private var hoverTrackingArea: NSTrackingArea?
 
     override func resetCursorRects() {
+        guard window != nil, !isHiddenOrHasHiddenAncestor, !bounds.isEmpty else { return }
         addCursorRect(bounds, cursor: .pointingHand)
     }
 
@@ -226,6 +227,7 @@ final class SelectionOverlayView: NSView {
     private var actionTooltip: NSView?
     private var showsPresetFixture = false
     private var trackingArea: NSTrackingArea?
+    private var frozenDisplayImage: NSImage?
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -234,6 +236,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func resetCursorRects() {
+        guard window != nil, !isHiddenOrHasHiddenAncestor, !bounds.isEmpty else { return }
         addValidCursorRect(bounds, cursor: .crosshair)
         if let actionToolbar {
             addValidCursorRect(actionToolbar.frame, cursor: .pointingHand)
@@ -259,6 +262,16 @@ final class SelectionOverlayView: NSView {
         )
         addTrackingArea(area)
         trackingArea = area
+    }
+
+    func setFrozenDisplayImage(_ image: CGImage?) {
+        frozenDisplayImage = image.map { NSImage(cgImage: $0, size: bounds.size) }
+        needsDisplay = true
+    }
+
+    func activateInitialCursor() {
+        NSCursor.crosshair.set()
+        invalidateCursorRects()
     }
 
     func configureSnapTargets(_ targets: [WindowSnapTarget]) {
@@ -430,6 +443,8 @@ final class SelectionOverlayView: NSView {
         super.draw(dirtyRect)
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
+        drawFrozenDisplayImage()
+
         context.setFillColor(NSColor.black.withAlphaComponent(0.42).cgColor)
         context.fill(bounds)
 
@@ -442,6 +457,11 @@ final class SelectionOverlayView: NSView {
             context.setFillColor(NSColor.white.cgColor)
             context.fill(displayRect)
             drawPresetFixture(in: displayRect)
+        } else if frozenDisplayImage != nil {
+            context.saveGState()
+            context.clip(to: displayRect)
+            drawFrozenDisplayImage()
+            context.restoreGState()
         } else {
             context.saveGState()
             context.setBlendMode(.clear)
@@ -459,6 +479,19 @@ final class SelectionOverlayView: NSView {
 
         let dimensions = "\(Int(displayRect.width)) × \(Int(displayRect.height))"
         drawHint(dimensions, at: CGPoint(x: displayRect.midX, y: max(26, displayRect.minY - 18)))
+    }
+
+    private func drawFrozenDisplayImage() {
+        guard let frozenDisplayImage else { return }
+        NSGraphicsContext.current?.imageInterpolation = .none
+        frozenDisplayImage.draw(
+            in: bounds,
+            from: CGRect(origin: .zero, size: frozenDisplayImage.size),
+            operation: .copy,
+            fraction: 1,
+            respectFlipped: true,
+            hints: nil
+        )
     }
 
     private func updateHoveredSnapTarget(at point: CGPoint) {

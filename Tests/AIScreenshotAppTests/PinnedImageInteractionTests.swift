@@ -60,4 +60,17 @@ final class PinnedImageInteractionTests: XCTestCase {
         XCTAssertFalse(state.showsBorder)
         XCTAssertFalse(state.showsShadow)
     }
+
+    @MainActor
+    func testPinnedPanelCanMoveAboveTheMenuBarWithoutSystemClamping() {
+        let panel = PinnedImagePanel(
+            contentRect: CGRect(x: 100, y: 100, width: 320, height: 180),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        let proposed = CGRect(x: 100, y: 920, width: 320, height: 180)
+
+        XCTAssertEqual(panel.constrainFrameRect(proposed, to: nil), proposed)
+    }
 }
