@@ -95,7 +95,7 @@ struct TranslatedImageRenderer {
         CGRect(x: 0, y: separatorY, width: CGFloat(width), height: 1).fill()
 
         var cursorY = CGFloat(panelHeight) - headerFont.pointSize * 1.65
-        "双语翻译 · \(targetLanguage)".draw(
+        "Bilingual Translation · \(targetLanguage)".draw(
             at: CGPoint(x: horizontalPadding, y: cursorY),
             withAttributes: [.font: headerFont, .foregroundColor: NSColor.labelColor]
         )

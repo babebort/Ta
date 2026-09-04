@@ -44,15 +44,15 @@ struct AIProviderProfile: Codable, Equatable, Identifiable, Sendable {
         requiresVisionModel: Bool = true,
         requiresTextModel: Bool = false
     ) -> String? {
-        if trimmedName.isEmpty { return "请给这套配置起一个名称。" }
+        if trimmedName.isEmpty { return "Please give this configuration a name." }
         if baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请先选择服务商，或填写服务地址。"
+            return "Please select a provider, or enter a service URL."
         }
         if let endpointError = ProviderEndpointValidator().validationMessage(for: baseURL) {
             return endpointError
         }
-        if requiresVisionModel && !hasVisionModel { return "请填写一个支持图片输入的视觉模型。" }
-        if requiresTextModel && !hasTextModel { return "请填写文字模型，截图翻译需要同时使用文字与视觉模型。" }
+        if requiresVisionModel && !hasVisionModel { return "Please enter a vision model that supports image input." }
+        if requiresTextModel && !hasTextModel { return "Please enter a text model — screenshot translation needs both a text model and a vision model." }
         return nil
     }
 }

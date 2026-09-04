@@ -123,7 +123,7 @@ actor TaAgentCapabilityService {
         } catch is CancellationError {
             response = .failure(
                 requestID: request.requestID,
-                error: AgentErrorPayload(code: .cancelled, message: "Agent 请求已取消。", retryable: false)
+                error: AgentErrorPayload(code: .cancelled, message: "The Agent request was cancelled.", retryable: false)
             )
         } catch {
             response = .failure(
@@ -151,8 +151,8 @@ actor TaAgentCapabilityService {
            ![AgentMethod.systemHandshake, .systemStatus, .systemCapabilities, .systemPermissions].contains(request.method) {
             throw CapabilityFailure(AgentErrorPayload(
                 code: .targetBlockedByPrivacyPolicy,
-                message: "拓的 Agent 调用已关闭。",
-                hint: "打开拓 → 设置 → Agent 与自动化后启用。",
+                message: "Ta's Agent calls are disabled.",
+                hint: "Open Ta → Settings → Agent & Automation to enable it.",
                 retryable: false
             ))
         }
@@ -186,7 +186,7 @@ actor TaAgentCapabilityService {
         case .deliverSave:
             return try await save(request)
         default:
-            throw invalid("该 Agent 方法尚未支持：\(request.method.rawValue)")
+            throw invalid("This Agent method is not yet supported: \(request.method.rawValue)")
         }
     }
 
@@ -268,8 +268,8 @@ actor TaAgentCapabilityService {
         guard await dependencies.screenPermission() else {
             throw CapabilityFailure(AgentErrorPayload(
                 code: .screenPermissionRequired,
-                message: "拓尚未获得屏幕录制权限。",
-                hint: "打开拓 → 设置 → 权限并启用屏幕录制。",
+                message: "Ta does not have Screen Recording permission yet.",
+                hint: "Open Ta → Settings → Permissions and enable Screen Recording.",
                 retryable: false
             ))
         }
@@ -341,15 +341,15 @@ actor TaAgentCapabilityService {
         guard await dependencies.visionConfigured() else {
             throw CapabilityFailure(AgentErrorPayload(
                 code: .modelProfileNotConfigured,
-                message: "尚未配置可用的视觉模型。",
-                hint: "打开拓 → 设置 → 模型与 API。",
+                message: "No vision model is configured yet.",
+                hint: "Open Ta → Settings → Models & API.",
                 retryable: false
             ))
         }
         let image = try loadImage(request)
         let taskRaw = request.params.string("task") ?? MultimodalTaskTemplate.general.rawValue
         guard let task = MultimodalTaskTemplate(rawValue: taskRaw) else {
-            throw invalid("未知的识图任务模板：\(taskRaw)")
+            throw invalid("Unknown recognition task template: \(taskRaw)")
         }
         let text = try await dependencies.analyzeImage(image, task)
         return .success(requestID: request.requestID, data: .object(["text": .string(text)]))
@@ -358,7 +358,7 @@ actor TaAgentCapabilityService {
     private func translateText(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
         try await ensureTranslationAllowed(request)
         guard let text = request.params.string("text"), !text.isEmpty else {
-            throw invalid("translate.text 需要非空 text 参数。")
+            throw invalid("translate.text requires a non-empty text parameter.")
         }
         let translated = try await dependencies.translateText(text)
         return .success(requestID: request.requestID, data: .object(["text": .string(translated)]))
@@ -381,7 +381,7 @@ actor TaAgentCapabilityService {
         } else if action == "apply", let lastImage {
             candidate = TaAgentAnnotationSession(sourceImage: lastImage)
         } else {
-            throw invalid("没有可用的标注编辑会话，请先截图或传入图片路径。")
+            throw invalid("No annotation editing session is available. Please take a screenshot first or provide an image path.")
         }
 
         let result: TaAgentAnnotationRenderResult
@@ -389,7 +389,7 @@ actor TaAgentCapabilityService {
             switch action {
             case "apply":
                 guard let recipeJSON = request.params.string("recipe"), !recipeJSON.isEmpty else {
-                    throw invalid("transform.image apply 需要非空 recipe JSON。")
+                    throw invalid("transform.image apply requires a non-empty recipe JSON.")
                 }
                 let recipe: AnnotationRecipe
                 do {
@@ -398,7 +398,7 @@ actor TaAgentCapabilityService {
                         from: Data(recipeJSON.utf8)
                     )
                 } catch {
-                    throw invalid("无法解析标注配方：\(error.localizedDescription)")
+                    throw invalid("Could not parse the annotation recipe: \(error.localizedDescription)")
                 }
                 result = try candidate.apply(recipe)
             case "undo":
@@ -406,7 +406,7 @@ actor TaAgentCapabilityService {
             case "redo":
                 result = try candidate.redo()
             default:
-                throw invalid("transform.image action 只支持 apply、undo 或 redo。")
+                throw invalid("transform.image action only supports apply, undo, or redo.")
             }
         } catch let failure as CapabilityFailure {
             throw failure
@@ -447,13 +447,13 @@ actor TaAgentCapabilityService {
         } else {
             copied = await dependencies.copyImage(try loadImage(request))
         }
-        guard copied else { throw invalid("未能写入剪贴板。") }
+        guard copied else { throw invalid("Failed to write to the clipboard.") }
         return .success(requestID: request.requestID, data: .object(["copied": .bool(true)]))
     }
 
     private func save(_ request: AgentRequestEnvelope) async throws -> AgentResponseEnvelope {
         guard let path = request.params.string("path"), path.hasPrefix("/") else {
-            throw invalid("deliver.save 需要绝对路径 path。")
+            throw invalid("deliver.save requires an absolute path.")
         }
         let image = try loadImage(request)
         let outputURL = URL(fileURLWithPath: path).standardizedFileURL
@@ -475,8 +475,8 @@ actor TaAgentCapabilityService {
         guard await dependencies.translationConfigured() else {
             throw CapabilityFailure(AgentErrorPayload(
                 code: .modelProfileNotConfigured,
-                message: "尚未配置可用的翻译模型。",
-                hint: "打开拓 → 设置 → 翻译。",
+                message: "No translation model is configured yet.",
+                hint: "Open Ta → Settings → Translation.",
                 retryable: false
             ))
         }
@@ -487,11 +487,11 @@ actor TaAgentCapabilityService {
             let url = URL(fileURLWithPath: path).standardizedFileURL
             guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
                   let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-                throw invalid("无法读取图片：\(url.path)")
+                throw invalid("Could not read the image: \(url.path)")
             }
             return image
         }
-        guard let lastImage else { throw invalid("没有可用的最近图片，请先截图或传入 inputPath。") }
+        guard let lastImage else { throw invalid("No recent image is available. Please take a screenshot first or provide inputPath.") }
         return lastImage
     }
 
@@ -503,7 +503,7 @@ actor TaAgentCapabilityService {
             return .frontmost
         case .captureWindow:
             guard let id = request.params.uint32("windowId") else {
-                throw invalid("capture.window 需要 windowId。")
+                throw invalid("capture.window requires windowId.")
             }
             return .window(id: id)
         case .captureRegion:
@@ -512,14 +512,14 @@ actor TaAgentCapabilityService {
                   let y = request.params.number("y"),
                   let width = request.params.number("width"),
                   let height = request.params.number("height") else {
-                throw invalid("capture.region 需要 displayId、x、y、width、height。")
+                throw invalid("capture.region requires displayId, x, y, width, height.")
             }
             return .region(
                 displayID: displayID,
                 globalRect: CGRect(x: x, y: y, width: width, height: height)
             )
         default:
-            throw invalid("不是截图方法。")
+            throw invalid("This is not a capture method.")
         }
     }
 
@@ -528,13 +528,13 @@ actor TaAgentCapabilityService {
         let message: String
         switch error {
         case TaAgentCaptureError.targetNotFound:
-            code = .targetNotFound; message = "找不到指定截图目标。"
+            code = .targetNotFound; message = "Could not find the specified capture target."
         case TaAgentCaptureError.targetChanged:
-            code = .targetChanged; message = "截图前目标窗口已发生变化。"
+            code = .targetChanged; message = "The target window changed before the screenshot was taken."
         case TaAgentCaptureError.invalidRegion:
-            code = .invalidRequest; message = "截图区域无效。"
+            code = .invalidRequest; message = "The capture region is invalid."
         case TaAgentCaptureError.screenPermissionRequired:
-            code = .screenPermissionRequired; message = "拓尚未获得屏幕录制权限。"
+            code = .screenPermissionRequired; message = "Ta does not have Screen Recording permission yet."
         default:
             code = .internalError; message = error.localizedDescription
         }
@@ -633,7 +633,7 @@ private struct CapabilityFailure: Error {
 
     static let encodingFailed = CapabilityFailure(AgentErrorPayload(
         code: .internalError,
-        message: "无法编码 Agent 图片。",
+        message: "Could not encode the Agent image.",
         retryable: false
     ))
 }

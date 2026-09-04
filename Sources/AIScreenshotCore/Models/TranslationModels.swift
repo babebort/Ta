@@ -7,9 +7,9 @@ public enum ScreenshotTranslationMode: String, CaseIterable, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .textOnly: "翻译文字并复制"
-        case .fullImage: "全文翻译图片"
-        case .bilingualImage: "双语翻译图片"
+        case .textOnly: "Translate Text and Copy"
+        case .fullImage: "Translate Full Image"
+        case .bilingualImage: "Bilingual Translated Image"
         }
     }
 }

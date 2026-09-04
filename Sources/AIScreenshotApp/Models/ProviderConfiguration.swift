@@ -9,13 +9,13 @@ struct ProviderConfiguration: Codable, Equatable, Sendable {
 
     var validationMessage: String? {
         if baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请先选择服务商，或在高级设置中填写服务地址。"
+            return "Please select a provider, or enter a service URL in Advanced Settings."
         }
         if let endpointError = ProviderEndpointValidator().validationMessage(for: baseURL) {
             return endpointError
         }
         if visionModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请填写一个支持图片输入的视觉模型。"
+            return "Please enter a vision model that supports image input."
         }
         return nil
     }

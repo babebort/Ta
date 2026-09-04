@@ -45,16 +45,16 @@ struct TranslationSettingsView: View {
                 .frame(width: 38, height: 38)
                 .background(TaPalette.cinnabar.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
             VStack(alignment: .leading, spacing: 2) {
-                Text("截图翻译")
+                Text("Screenshot Translation")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(TaPalette.ink)
-                Text("沿用已保存的 AI 模型，只需设置语言和默认行为。")
+                Text("Reuses your saved AI model — just set the language and default behavior.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
             if selectedProfile != nil {
-                Label("已就绪", systemImage: "checkmark.circle.fill")
+                Label("Ready", systemImage: "checkmark.circle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.green)
             }
@@ -64,20 +64,20 @@ struct TranslationSettingsView: View {
 
     private var modelSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("使用的模型配置", detail: "这里只显示 API Key、文字模型和视觉模型均已就绪的配置。")
+            sectionTitle("Model Configuration Used", detail: "Only shows configurations with API key, text model, and vision model all ready.")
             if eligibleProfiles.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("暂无可用于翻译的模型")
+                        Text("No models available for translation")
                             .font(.callout.weight(.semibold))
-                        Text("先完成一套 AI 模型配置，翻译页会自动复用。")
+                        Text("Set up an AI model configuration first — the translation page will reuse it automatically.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("去配置 AI 模型") {
+                    Button("Configure AI Model") {
                         NotificationCenter.default.post(name: .openAIModelSettings, object: nil)
                     }
                     .buttonStyle(.borderedProminent)
@@ -90,7 +90,7 @@ struct TranslationSettingsView: View {
                         Image(systemName: "checkmark.shield.fill")
                             .font(.system(size: 20))
                             .foregroundStyle(.green)
-                        Picker("模型配置", selection: $selectedProfileID) {
+                        Picker("Model Configuration", selection: $selectedProfileID) {
                             ForEach(eligibleProfiles) { profile in
                                 Text(profile.trimmedName).tag(Optional(profile.id))
                             }
@@ -99,31 +99,31 @@ struct TranslationSettingsView: View {
                             selectTranslationProfile(newValue)
                         }
                         Spacer()
-                        Label("可用", systemImage: "circle.fill")
+                        Label("Available", systemImage: "circle.fill")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.green)
                     }
 
                     if let profile = selectedProfile {
                         HStack(spacing: 10) {
-                            modelValue("文字", profile.textModel)
+                            modelValue("Text", profile.textModel)
                             Divider().frame(height: 24)
-                            modelValue("视觉", profile.visionModel)
+                            modelValue("Vision", profile.visionModel)
                             Spacer()
                         }
                     }
 
                     HStack {
                         if state.profiles.count > eligibleProfiles.count {
-                            Text("另有 \(state.profiles.count - eligibleProfiles.count) 套配置尚未完成。")
+                            Text("\(state.profiles.count - eligibleProfiles.count) more configuration(s) not yet complete.")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button("管理模型") {
+                        Button("Manage Models") {
                             NotificationCenter.default.post(name: .openAIModelSettings, object: nil)
                         }
-                        Button("测试") { testSelectedProfile() }
+                        Button("Test") { testSelectedProfile() }
                             .disabled(isTesting || selectedProfile == nil)
                     }
                     .controlSize(.small)
@@ -135,7 +135,7 @@ struct TranslationSettingsView: View {
             if isTesting {
                 HStack(spacing: 7) {
                     ProgressView().controlSize(.small)
-                    Text("正在测试文字与视觉能力…")
+                    Text("Testing text and vision capabilities…")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -151,10 +151,10 @@ struct TranslationSettingsView: View {
 
     private var languageSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("翻译语言", detail: "默认自动识别截图语言，也可以直接输入其他语言。")
+            sectionTitle("Translation Language", detail: "Auto-detects the screenshot's language by default — you can also type another language.")
             VStack(spacing: 8) {
-                languageRow(title: "源语言", value: $sourceLanguage, presets: ["自动检测", "英文", "简体中文", "日文", "韩文"])
-                languageRow(title: "目标语言", value: $targetLanguage, presets: ["简体中文", "英文", "繁体中文", "日文", "韩文", "西班牙文"])
+                languageRow(title: "Source Language", value: $sourceLanguage, presets: ["Auto-detect", "English", "Simplified Chinese", "Japanese", "Korean"])
+                languageRow(title: "Target Language", value: $targetLanguage, presets: ["Simplified Chinese", "English", "Traditional Chinese", "Japanese", "Korean", "Spanish"])
             }
             .padding(12)
             .background(surface)
@@ -163,15 +163,15 @@ struct TranslationSettingsView: View {
 
     private var behaviorSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("默认行为", detail: "截图工具栏点击“翻译”后直接执行，不再二次确认。")
+            sectionTitle("Default Behavior", detail: "Clicking \u{201c}Translate\u{201d} in the screenshot toolbar runs immediately, with no extra confirmation.")
             VStack(alignment: .leading, spacing: 9) {
-                Picker("默认翻译方式", selection: $defaultMode) {
+                Picker("Default Translation Mode", selection: $defaultMode) {
                     ForEach(ScreenshotTranslationMode.allCases, id: \.rawValue) { mode in
                         Text(mode.displayName).tag(mode.rawValue)
                     }
                 }
-                Toggle("本地 OCR 置信度较低时，使用视觉模型读取截图", isOn: $usesVisionFallback)
-                Text("快捷键 \(translationShortcut.displayText) 始终执行“翻译文字并复制”。")
+                Toggle("Use the vision model to read the screenshot when local OCR confidence is low", isOn: $usesVisionFallback)
+                Text("The \(translationShortcut.displayText) shortcut always runs \u{201c}Translate Text and Copy\u{201d}.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -184,7 +184,7 @@ struct TranslationSettingsView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "lock.shield.fill")
                 .foregroundStyle(.green)
-            Text("API Key 只保存在这台 Mac 的 Keychain，覆盖升级拓后继续保留；只有主动翻译或识图时才会发送所选截图。")
+            Text("The API key is stored only in this Mac's Keychain and persists across app updates; the selected screenshot is only sent when you translate or read it.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -220,7 +220,7 @@ struct TranslationSettingsView: View {
                 TextField(title, text: value)
                     .textFieldStyle(.roundedBorder)
                     .frame(minWidth: 360)
-                Menu("常用") {
+                Menu("Presets") {
                     ForEach(presets, id: \.self) { language in
                         Button(language) { value.wrappedValue = language }
                     }
@@ -261,7 +261,7 @@ struct TranslationSettingsView: View {
     private func selectTranslationProfile(_ id: UUID?) {
         do {
             state = try profileStore.setTranslationProfile(id: id)
-            status("已切换翻译模型。")
+            status("Translation model switched.")
         } catch {
             status(error.localizedDescription, isError: true)
         }
@@ -270,12 +270,12 @@ struct TranslationSettingsView: View {
     private func testSelectedProfile() {
         guard let profile = selectedProfile else { return }
         isTesting = true
-        status("正在测试…")
+        status("Testing…")
         Task {
             do {
                 _ = try await translationService.testTextModel(profile: profile)
                 _ = try await translationService.testVisionModel(profile: profile)
-                status("文字模型与视觉模型均可用。")
+                status("Both text and vision models are working.")
             } catch {
                 status(error.localizedDescription, isError: true)
             }

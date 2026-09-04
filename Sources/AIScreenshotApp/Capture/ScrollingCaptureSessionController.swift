@@ -69,7 +69,7 @@ final class ScrollingCaptureSessionController {
     if AccessibilityAutoScrollService.isGranted {
       beginAutoScroll(selection: selection)
     } else {
-      hudModel?.status = "点击自动滚动并授权后，将从选区顶部持续采集到底部"
+      hudModel?.status = "Click Auto Scroll and grant permission to capture continuously from the top of the selection to the bottom"
     }
 
     captureTask = Task { [weak self] in
@@ -208,7 +208,7 @@ final class ScrollingCaptureSessionController {
                     Self.recommendedScrollDistance(for: selection) / 2
                   )
                   nextAutoScrollDate = now.addingTimeInterval(Self.standardAutoScrollDelay)
-                  hudModel?.status = "滚动区域仍未到底，正在重新锁定并继续"
+                  hudModel?.status = "Scroll area hasn't reached the bottom yet, re-locking and continuing"
                 }
               } else if currentScrollProgress?.isAtEnd == true {
                 // Do not open another gesture after a bottom signal;
@@ -236,7 +236,7 @@ final class ScrollingCaptureSessionController {
                 } else {
                   isAutoScrolling = false
                   hudModel?.isAutoScrolling = false
-                  hudModel?.status = "无法向截图目标发送滚动事件，请检查目标窗口与辅助功能权限"
+                  hudModel?.status = "Could not send scroll events to the capture target. Please check the target window and Accessibility permission"
                 }
               }
             }
@@ -330,7 +330,7 @@ final class ScrollingCaptureSessionController {
     pendingScrollProgress = nil
     bottomConfirmationCount = 0
     hudModel?.isAutoScrolling = false
-    hudModel?.status = "已到达滚动区域底部，内容采集完成"
+    hudModel?.status = "Reached the bottom of the scroll area, Capture complete"
   }
 
   static func autoScrollObservation(
@@ -393,28 +393,28 @@ final class ScrollingCaptureSessionController {
     hudModel?.acceptedFrames = acceptedFrames
     hudModel?.skippedFrames = skippedFrames
     hudModel?.pixelHeight = stitcher.outputPixelHeight
-    let stickyStatusFragments = ["内容采集完成", "已暂停", "无法向截图目标发送滚动事件"]
+    let stickyStatusFragments = ["Capture complete", "Paused", "Could not send scroll events to the capture target"]
     let hasStickyStatus = stickyStatusFragments.contains { fragment in
       hudModel?.status.contains(fragment) ?? false
     }
     if !hasStickyStatus {
       if acceptedFrames <= 1, !isAutoScrolling {
-        hudModel?.status = "可手动上下滚动，也可开启自动滚动"
+        hudModel?.status = "Scroll manually, or turn on auto scroll"
       } else if isAutoScrolling, bottomConfirmationCount > 0 {
         hudModel?.status =
-          "已到底，正在确认最终画面 · \(bottomConfirmationCount) / \(Self.requiredBottomConfirmationFrames)"
+          "Reached the bottom, confirming the final frame · \(bottomConfirmationCount) / \(Self.requiredBottomConfirmationFrames)"
       } else if isAutoScrolling, autoScrollProgress.needsMoreSettlingTime,
         Date() < autoScrollSettleDeadline
       {
-        hudModel?.status = "页面仍在变化，等待稳定后继续"
+        hudModel?.status = "Page is still changing, waiting for it to settle"
       } else if isAutoScrolling, autoScrollProgress.attemptsWithoutProgress > 0 {
         hudModel?.status =
-          "等待页面响应 · 已重试 \(autoScrollProgress.attemptsWithoutProgress) / \(autoScrollProgress.maximumAttemptsWithoutProgress) 次"
+          "Waiting for the page to respond · Retried \(autoScrollProgress.attemptsWithoutProgress) / \(autoScrollProgress.maximumAttemptsWithoutProgress) times"
       } else {
         hudModel?.status =
           isAutoScrolling
-          ? "自动滚动中，正在识别新增内容"
-          : "正在识别重叠区域与固定输入框"
+          ? "Auto scrolling, detecting new content"
+          : "Detecting overlap area and fixed input fields"
       }
     }
   }
@@ -427,7 +427,7 @@ final class ScrollingCaptureSessionController {
       autoScrollSettleDeadline = .distantPast
     }
     hudModel?.isPaused = isPaused
-    hudModel?.status = isPaused ? "已暂停，可检查内容" : "继续上下滚动"
+    hudModel?.status = isPaused ? "Paused, you can review the content" : "Resuming scroll"
   }
 
   private func toggleAutoScroll() {
@@ -435,16 +435,16 @@ final class ScrollingCaptureSessionController {
       isAutoScrolling = false
       autoScrollProgress.begin()
       hudModel?.isAutoScrolling = false
-      hudModel?.status = "自动滚动已关闭，可继续手动滚动"
+      hudModel?.status = "Auto scroll turned off, you can keep scrolling manually"
       return
     }
     guard AccessibilityAutoScrollService.isGranted || AccessibilityAutoScrollService.request()
     else {
-      hudModel?.status = "自动滚动需要辅助功能权限；授权后再次点击"
+      hudModel?.status = "Auto scroll requires Accessibility permission; click again after granting it"
       return
     }
     guard let activeSelection else {
-      hudModel?.status = "截图区域已经失效，请重新开始长截图"
+      hudModel?.status = "The capture area is no longer valid. Please start a new scrolling capture"
       return
     }
     beginAutoScroll(selection: activeSelection)
@@ -460,8 +460,8 @@ final class ScrollingCaptureSessionController {
     hudModel?.isAutoScrolling = true
     hudModel?.status =
       resolvedTarget.mode == .accessibilityTracked
-      ? "已锁定滚动区域，自动采集到真实底部"
-      : "通用滚动模式，自动识别新增内容直到画面稳定"
+      ? "Locked the scroll area, capturing automatically to the real bottom"
+      : "General scroll mode, detecting new content automatically until the frame settles"
   }
 
   private func finish() {
@@ -551,7 +551,7 @@ final class ScrollingCaptureSessionController {
 
 @MainActor
 private final class ScrollingCaptureHUDModel: ObservableObject {
-  @Published var status = "正在采集第一帧…"
+  @Published var status = "Capturing the first frame…"
   @Published var acceptedFrames = 0
   @Published var skippedFrames = 0
   @Published var pixelHeight = 0
@@ -573,27 +573,27 @@ private struct ScrollingCaptureHUDView: View {
           .font(.title2)
           .foregroundStyle(model.isPaused ? .orange : .blue)
         VStack(alignment: .leading, spacing: 2) {
-          Text("长截图采集中")
+          Text("Capturing scrolling screenshot")
             .font(.headline)
           Text(model.status)
             .font(.caption)
             .foregroundStyle(.secondary)
         }
         Spacer()
-        Text("\(model.acceptedFrames) 帧 · \(model.pixelHeight) px")
+        Text("\(model.acceptedFrames) frames · \(model.pixelHeight) px")
           .font(.system(.caption, design: .rounded))
           .foregroundStyle(.secondary)
       }
 
       HStack(spacing: 8) {
-        Text(model.skippedFrames > 0 ? "已跳过 \(model.skippedFrames) 个不连续画面" : "慢速、连续滚动效果最好")
+        Text(model.skippedFrames > 0 ? "Skipped \(model.skippedFrames) discontinuous frames" : "Slow, continuous scrolling works best")
           .font(.caption2)
           .foregroundStyle(model.skippedFrames > 0 ? .orange : .secondary)
         Spacer()
-        Button(model.isAutoScrolling ? "停止自动滚动" : "自动滚动") { model.onToggleAutoScroll?() }
-        Button(model.isPaused ? "继续" : "暂停") { model.onTogglePause?() }
-        Button("取消") { model.onCancel?() }
-        Button("完成并保存") { model.onFinish?() }
+        Button(model.isAutoScrolling ? "Stop Auto Scroll" : "Auto Scroll") { model.onToggleAutoScroll?() }
+        Button(model.isPaused ? "Resume" : "Pause") { model.onTogglePause?() }
+        Button("Cancel") { model.onCancel?() }
+        Button("Finish & Save") { model.onFinish?() }
           .buttonStyle(.borderedProminent)
           .disabled(model.acceptedFrames == 0)
       }

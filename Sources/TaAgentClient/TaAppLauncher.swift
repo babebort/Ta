@@ -33,15 +33,15 @@ public enum TaAppLauncherError: Error, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .appNotInstalled(let path):
-            "找不到拓 App：\(path)"
+            "Could not find the Ta app: \(path)"
         case .launchFailed(let message):
-            "无法在后台启动拓：\(message)"
+            "Could not launch Ta in the background: \(message)"
         }
     }
 }
 
 public struct TaAppLauncher: Sendable {
-    public static let defaultApplicationURL = URL(fileURLWithPath: "/Applications/拓.app", isDirectory: true)
+    public static let defaultApplicationURL = URL(fileURLWithPath: "/Applications/Ta.app", isDirectory: true)
 
     public static func plan(
         applicationURL: URL = defaultApplicationURL

@@ -32,7 +32,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "标注截图"
+        window.title = "Annotate Screenshot"
         window.titlebarAppearsTransparent = false
         window.minSize = NSSize(width: 860, height: 600)
         window.isReleasedWhenClosed = false
@@ -68,7 +68,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
             tools.lastItem?.tag = tool.rawValue
         }
         tools.selectItem(withTag: AnnotationTool.rectangle.rawValue)
-        tools.toolTip = "标注工具"
+        tools.toolTip = "Annotation Tool"
         tools.target = canvas
         tools.action = #selector(AnnotationCanvasView.selectTool(_:))
         tools.controlSize = .regular
@@ -78,12 +78,12 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         colorWell.color = .systemRed
         colorWell.target = canvas
         colorWell.action = #selector(AnnotationCanvasView.changeColor(_:))
-        colorWell.toolTip = "标注颜色"
+        colorWell.toolTip = "Annotation Color"
         colorWell.widthAnchor.constraint(equalToConstant: 36).isActive = true
         colorWell.heightAnchor.constraint(equalToConstant: 24).isActive = true
 
         let widthSlider = NSSlider(value: 5, minValue: 1, maxValue: 22, target: canvas, action: #selector(AnnotationCanvasView.changeWidth(_:)))
-        widthSlider.toolTip = "线条粗细"
+        widthSlider.toolTip = "Line Width"
         widthSlider.controlSize = .small
         widthSlider.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.widthSliderWidth).isActive = true
 
@@ -95,30 +95,30 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         textSize.selectItem(withTag: Int(AnnotationTextMetrics.defaultSize))
         textSize.target = canvas
         textSize.action = #selector(AnnotationCanvasView.changeTextSize(_:))
-        textSize.toolTip = "文字字号"
+        textSize.toolTip = "Text Size"
         textSize.controlSize = .small
         textSize.widthAnchor.constraint(equalToConstant: 62).isActive = true
 
         let opacitySlider = NSSlider(value: 1, minValue: 0.15, maxValue: 1, target: canvas, action: #selector(AnnotationCanvasView.changeOpacity(_:)))
-        opacitySlider.toolTip = "透明度"
+        opacitySlider.toolTip = "Opacity"
         opacitySlider.controlSize = .small
         opacitySlider.widthAnchor.constraint(equalToConstant: AnnotationEditorToolbarMetrics.opacitySliderWidth).isActive = true
 
-        let dashed = NSButton(checkboxWithTitle: "虚线", target: canvas, action: #selector(AnnotationCanvasView.changeDashed(_:)))
-        dashed.toolTip = "形状和箭头使用虚线"
+        let dashed = NSButton(checkboxWithTitle: "Dashed", target: canvas, action: #selector(AnnotationCanvasView.changeDashed(_:)))
+        dashed.toolTip = "Use dashed lines for shapes and arrows"
         dashed.controlSize = .small
 
-        let undo = toolbarIconButton(symbol: "arrow.uturn.backward", tooltip: "撤销", target: canvas, action: #selector(AnnotationCanvasView.undo(_:)))
-        let redo = toolbarIconButton(symbol: "arrow.uturn.forward", tooltip: "重做", target: canvas, action: #selector(AnnotationCanvasView.redo(_:)))
-        let rotate = toolbarIconButton(symbol: "rotate.right", tooltip: "所选对象顺时针旋转 90°", target: canvas, action: #selector(AnnotationCanvasView.rotateSelected))
-        let shrink = toolbarIconButton(symbol: "minus.magnifyingglass", tooltip: "缩小所选对象", target: canvas, action: #selector(AnnotationCanvasView.shrinkSelected))
-        let grow = toolbarIconButton(symbol: "plus.magnifyingglass", tooltip: "放大所选对象", target: canvas, action: #selector(AnnotationCanvasView.growSelected))
+        let undo = toolbarIconButton(symbol: "arrow.uturn.backward", tooltip: "Undo", target: canvas, action: #selector(AnnotationCanvasView.undo(_:)))
+        let redo = toolbarIconButton(symbol: "arrow.uturn.forward", tooltip: "Redo", target: canvas, action: #selector(AnnotationCanvasView.redo(_:)))
+        let rotate = toolbarIconButton(symbol: "rotate.right", tooltip: "Rotate selected object 90° clockwise", target: canvas, action: #selector(AnnotationCanvasView.rotateSelected))
+        let shrink = toolbarIconButton(symbol: "minus.magnifyingglass", tooltip: "Shrink selected object", target: canvas, action: #selector(AnnotationCanvasView.shrinkSelected))
+        let grow = toolbarIconButton(symbol: "plus.magnifyingglass", tooltip: "Enlarge selected object", target: canvas, action: #selector(AnnotationCanvasView.growSelected))
 
-        let copy = toolbarActionButton(title: "复制", symbol: "doc.on.doc", target: canvas, action: #selector(AnnotationCanvasView.copyRenderedImage))
-        let save = toolbarActionButton(title: "保存", symbol: "square.and.arrow.down", target: self, action: #selector(saveEditorImage(_:)))
+        let copy = toolbarActionButton(title: "Copy", symbol: "doc.on.doc", target: canvas, action: #selector(AnnotationCanvasView.copyRenderedImage))
+        let save = toolbarActionButton(title: "Save", symbol: "square.and.arrow.down", target: self, action: #selector(saveEditorImage(_:)))
         save.identifier = NSUserInterfaceItemIdentifier("saveEditorImage")
 
-        let done = NSButton(title: "完成", target: window, action: #selector(NSWindow.performClose(_:)))
+        let done = NSButton(title: "Done", target: window, action: #selector(NSWindow.performClose(_:)))
         done.bezelStyle = .rounded
         done.bezelColor = NSColor(
             calibratedRed: 214 / 255,
@@ -131,7 +131,7 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
         done.keyEquivalent = "\r"
 
         let toolGroup = toolbarGroup([
-            toolbarSymbolLabel("pencil.tip", accessibilityDescription: "工具"),
+            toolbarSymbolLabel("pencil.tip", accessibilityDescription: "Tool"),
             tools
         ])
         let historyGroup = toolbarGroup([undo, redo])
@@ -139,15 +139,15 @@ final class AnnotationEditorWindowController: NSObject, NSWindowDelegate {
 
         let strokeGroup = toolbarGroup([
             colorWell,
-            toolbarSymbolLabel("lineweight", accessibilityDescription: "线条粗细"),
+            toolbarSymbolLabel("lineweight", accessibilityDescription: "Line Width"),
             widthSlider
         ])
         let textGroup = toolbarGroup([
-            toolbarSymbolLabel("textformat.size", accessibilityDescription: "文字字号"),
+            toolbarSymbolLabel("textformat.size", accessibilityDescription: "Text Size"),
             textSize
         ])
         let appearanceGroup = toolbarGroup([
-            toolbarSymbolLabel("circle.lefthalf.filled", accessibilityDescription: "透明度"),
+            toolbarSymbolLabel("circle.lefthalf.filled", accessibilityDescription: "Opacity"),
             opacitySlider,
             dashed
         ])
@@ -316,20 +316,20 @@ enum AnnotationTool: Int, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .select: "选择/移动已有标注"
-        case .crop: "裁剪"
-        case .rectangle: "矩形"
-        case .ellipse: "椭圆"
-        case .arrow: "箭头"
-        case .pen: "画笔"
-        case .highlighter: "高亮笔"
-        case .text: "文字"
-        case .number: "编号"
-        case .mosaic: "框选马赛克"
-        case .mosaicBrush: "涂抹马赛克"
-        case .blur: "模糊"
-        case .eraser: "橡皮"
-        case .magnify: "局部放大"
+        case .select: "Select/Move Existing Annotation"
+        case .crop: "Crop"
+        case .rectangle: "Rectangle"
+        case .ellipse: "Ellipse"
+        case .arrow: "Arrow"
+        case .pen: "Pen"
+        case .highlighter: "Highlighter"
+        case .text: "Text"
+        case .number: "Number"
+        case .mosaic: "Mosaic (Select Area)"
+        case .mosaicBrush: "Mosaic (Brush)"
+        case .blur: "Blur"
+        case .eraser: "Eraser"
+        case .magnify: "Magnify"
         }
     }
 }
@@ -435,7 +435,7 @@ struct AnnotationTextMetrics {
         font: NSFont,
         maximumWidth: CGFloat
     ) -> CGSize {
-        let content = text.isEmpty ? "文字" : text
+        let content = text.isEmpty ? "Text" : text
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
         let unconstrained = (content as NSString).boundingRect(
             with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),

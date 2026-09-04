@@ -7,10 +7,10 @@ enum TaAgentInstallationGuide {
     "curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash"
   static let verificationCommand = "ta status --json"
   static let agentPrompt = """
-    请帮我在这台 Mac 安装拓（Ta）的 CLI 和 Agent Skill。请执行下面这条命令：
+    Please help me install the Ta CLI and Agent Skill on this Mac. Run the following command:
     curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 https://github.com/kangarooking/Ta/releases/latest/download/install.sh | bash
 
-    安装完成后，运行 ~/.local/bin/ta status --json 验证。确认 JSON 顶层 ok 为 true、data.bridge 为 ready；如果只是权限尚未开启，请告诉我去“拓 → 设置 → 权限 / Agent”完成授权。不要索要、读取或输出任何 API Key，也不要替我修改云端模型配置。
+    After installation, run ~/.local/bin/ta status --json to verify. Confirm the top-level JSON "ok" is true and "data.bridge" is "ready"; if it's only that permissions aren't granted yet, tell me to go to "Ta → Settings → Permissions / Agent" to authorize. Do not ask for, read, or output any API key, and do not change my cloud model configuration on my behalf.
     """
 }
 
@@ -65,39 +65,39 @@ struct AgentSettingsView: View {
         .overlay(TaPalette.hairline)
 
       Form {
-        Section("Agent 与自动化") {
-          Toggle("允许本机 Agent 调用拓", isOn: $accessEnabled)
+        Section("Agent & Automation") {
+          Toggle("Allow local Agents to call Ta", isOn: $accessEnabled)
           Text(
             accessEnabled
-              ? "CLI、Agent Skill 和 DeepSeek Harness 可以通过仅限当前用户的本机 Bridge 调用拓。"
-              : "除状态与权限检查外，所有 Agent 能力都会被拒绝。"
+              ? "The CLI, Agent Skill, and DeepSeek Harness can call Ta through a local, current-user-only bridge."
+              : "All Agent capabilities are denied except status and permission checks."
           )
           .font(.caption)
           .foregroundStyle(.secondary)
 
-          Toggle("允许无感自动截图", isOn: $automaticCaptureAllowed)
+          Toggle("Allow unattended auto-capture", isOn: $automaticCaptureAllowed)
             .disabled(!accessEnabled)
-          Label("普通截图不会弹出拓、抢占前台 App、移动鼠标或发送键盘事件。", systemImage: "cursorarrow.rays")
+          Label("Normal captures never pop up Ta, steal foreground focus, move the mouse, or send keyboard events.", systemImage: "cursorarrow.rays")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
 
-        Section("云端与模型") {
-          Picker("默认云端策略", selection: $cloudPolicy) {
-            Text("按能力决定（推荐）").tag(AgentCloudPolicy.auto.rawValue)
-            Text("允许已配置的云端模型").tag(AgentCloudPolicy.allow.rawValue)
-            Text("始终禁止上传").tag(AgentCloudPolicy.deny.rawValue)
+        Section("Cloud & Models") {
+          Picker("Default Cloud Policy", selection: $cloudPolicy) {
+            Text("Decide by capability (recommended)").tag(AgentCloudPolicy.auto.rawValue)
+            Text("Allow configured cloud models").tag(AgentCloudPolicy.allow.rawValue)
+            Text("Always deny uploads").tag(AgentCloudPolicy.deny.rawValue)
           }
           .disabled(!accessEnabled)
           Text(cloudPolicyDescription)
             .font(.caption)
             .foregroundStyle(.secondary)
-          Label("Agent 只能请求拓执行模型任务，无法读取 Keychain 中的 API Key。", systemImage: "key.fill")
+          Label("Agents can only ask Ta to run a model task; they can't read API keys from the Keychain.", systemImage: "key.fill")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
 
-        Section("隐私 App 黑名单") {
+        Section("Privacy App Denylist") {
           TextEditor(text: $privacyDenylist)
             .font(.system(.body, design: .monospaced))
             .frame(minHeight: 68)
@@ -110,44 +110,44 @@ struct AgentSettingsView: View {
                 .stroke(TaPalette.hairline, lineWidth: 1)
             }
             .disabled(!accessEnabled)
-          Text("每行填写一个 Bundle ID，例如 com.1password.1password。截显示器时，只要画面包含黑名单 App 就会拒绝截图。")
+          Text("One Bundle ID per line, e.g. com.1password.1password. A capture is refused whenever the screen contains a denylisted app.")
             .font(.caption)
             .foregroundStyle(.secondary)
-          Toggle("允许 Agent 截取拓自身", isOn: $allowCaptureTa)
+          Toggle("Allow Agents to capture Ta itself", isOn: $allowCaptureTa)
             .disabled(!accessEnabled)
         }
 
-        Section("缓存与调用记录") {
+        Section("Cache & Call History") {
           HStack {
             VStack(alignment: .leading, spacing: 3) {
-              Text("临时截图缓存")
-              Text("图片保存在本机缓存，默认 24 小时后自动清理。")
+              Text("Temporary Screenshot Cache")
+              Text("Images are stored in a local cache and cleared automatically after 24 hours by default.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("立即清理") { clearArtifacts() }
+            Button("Clear Now") { clearArtifacts() }
           }
 
           HStack {
-            Text("最近调用")
+            Text("Recent Calls")
             Spacer()
-            Button("刷新") { refreshAudit() }
+            Button("Refresh") { refreshAudit() }
               .buttonStyle(.link)
-            Button("清除记录") { clearAudit() }
+            Button("Clear History") { clearAudit() }
               .buttonStyle(.link)
               .disabled(recentCalls.isEmpty)
           }
 
           if recentCalls.isEmpty {
-            Text("暂无调用记录。审计不会保存 API Key、OCR/翻译正文或图片数据。")
+            Text("No call history yet. The audit log never stores API keys, OCR/translation text, or image data.")
               .font(.caption)
               .foregroundStyle(.secondary)
           } else {
             ForEach(recentCalls.prefix(8)) { entry in
               auditRow(entry)
             }
-            Text("仅保留最近 100 次调用；不记录请求参数和识别内容。")
+            Text("Only the last 100 calls are kept; request parameters and recognized content are never logged.")
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -172,7 +172,7 @@ struct AgentSettingsView: View {
   private var installationPanel: some View {
     VStack(alignment: .leading, spacing: 9) {
       HStack(spacing: 8) {
-        Text("安装 CLI 与 Skill")
+        Text("Install CLI & Skill")
           .font(.headline)
         installationBadge(
           title: "ta CLI",
@@ -180,42 +180,42 @@ struct AgentSettingsView: View {
         )
         installationBadge(
           title: installationStatus.skillInstalled
-            ? "Ta Skill · \(installationStatus.installedSkillLocations.count) 处"
+            ? "Ta Skill · \(installationStatus.installedSkillLocations.count) location(s)"
             : "Ta Skill",
           installed: installationStatus.skillInstalled
         )
         Spacer()
-        Button("重新检测", systemImage: "arrow.clockwise") {
+        Button("Recheck", systemImage: "arrow.clockwise") {
           refreshInstallationStatus()
         }
         .buttonStyle(.borderless)
       }
 
-      Text("一条命令同时安装或更新 CLI 与 Skill；自动校验下载文件，并适配 Codex 和通用 Agent Skills 目录。")
+      Text("One command installs or updates both the CLI and the Skill; it verifies the download and adapts to the Codex and general Agent Skills directories.")
         .font(.caption)
         .foregroundStyle(.secondary)
 
       HStack(alignment: .top, spacing: 10) {
         installationBlock(
-          title: "方式一 · 终端",
-          subtitle: "复制命令并执行",
+          title: "Option 1 · Terminal",
+          subtitle: "Copy the command and run it",
           symbol: "terminal",
           content: TaAgentInstallationGuide.installCommand,
           maximumLines: 2,
-          copiedMessage: "终端安装命令已复制。"
+          copiedMessage: "Terminal install command copied."
         )
         installationBlock(
-          title: "方式二 · 交给 Agent",
-          subtitle: "复制完整安装提示词",
+          title: "Option 2 · Hand to an Agent",
+          subtitle: "Copy the full install prompt",
           symbol: "sparkles",
           content: TaAgentInstallationGuide.agentPrompt,
           maximumLines: 2,
-          copiedMessage: "Agent 安装提示词已复制。"
+          copiedMessage: "Agent install prompt copied."
         )
       }
 
       Label(
-        "安装后重启 Agent，再运行 \(TaAgentInstallationGuide.verificationCommand) 验证连接。",
+        "After installing, restart your Agent, then run \(TaAgentInstallationGuide.verificationCommand) to verify the connection.",
         systemImage: "checkmark.shield"
       )
       .font(.caption)
@@ -230,11 +230,11 @@ struct AgentSettingsView: View {
   private var cloudPolicyDescription: String {
     switch AgentCloudPolicy(rawValue: cloudPolicy) ?? .auto {
     case .auto:
-      "本地截图和 OCR 留在设备上；识图、翻译或 DeepSeek OCR 等模型能力按任务使用云端。调用方仍可用 cloud=deny 强制本地。"
+      "Local capture and OCR stay on-device; capabilities like vision, translation, or DeepSeek OCR use the cloud per task. Callers can still force local-only with cloud=deny."
     case .allow:
-      "允许 Agent 使用你已经在拓中配置的云端模型。每次调用仍会写入是否上云的审计标记。"
+      "Allows Agents to use the cloud models you've already configured in Ta. Every call still logs whether it went to the cloud."
     case .deny:
-      "所有需要上传图片或文字的 Agent 调用都会被拒绝，只保留本地截图和本地 OCR。"
+      "Every Agent call that needs to upload an image or text is denied; only local capture and local OCR remain available."
     }
   }
 
@@ -271,7 +271,7 @@ struct AgentSettingsView: View {
             .foregroundStyle(.secondary)
         }
         Spacer()
-        Button("复制", systemImage: "doc.on.doc") {
+        Button("Copy", systemImage: "doc.on.doc") {
           copyInstallationText(content, message: copiedMessage)
         }
         .buttonStyle(.bordered)
@@ -313,11 +313,11 @@ struct AgentSettingsView: View {
       }
       Spacer()
       if entry.cloudUploaded {
-        Label("云端", systemImage: "icloud.and.arrow.up")
+        Label("Cloud", systemImage: "icloud.and.arrow.up")
           .font(.caption2)
           .foregroundStyle(.orange)
       } else {
-        Text("本地")
+        Text("Local")
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
@@ -334,7 +334,7 @@ struct AgentSettingsView: View {
         recentCalls = try await auditLog.recent(limit: 20)
         operationMessage = nil
       } catch {
-        operationMessage = "无法读取调用记录：\(error.localizedDescription)"
+        operationMessage = "Unable to read call history: \(error.localizedDescription)"
       }
     }
   }
@@ -349,7 +349,7 @@ struct AgentSettingsView: View {
     if pasteboard.setString(text, forType: .string) {
       operationMessage = message
     } else {
-      operationMessage = "复制失败，请手动选择并复制。"
+      operationMessage = "Copy failed; please select and copy it manually."
     }
   }
 
@@ -358,9 +358,9 @@ struct AgentSettingsView: View {
       do {
         try await auditLog.clear()
         recentCalls = []
-        operationMessage = "调用记录已清除。"
+        operationMessage = "Call history cleared."
       } catch {
-        operationMessage = "清除失败：\(error.localizedDescription)"
+        operationMessage = "Clear failed: \(error.localizedDescription)"
       }
     }
   }
@@ -369,9 +369,9 @@ struct AgentSettingsView: View {
     Task {
       do {
         let count = try await artifactStore.clearAll()
-        operationMessage = count == 0 ? "当前没有临时截图缓存。" : "已清理 \(count) 组临时截图。"
+        operationMessage = count == 0 ? "There's no temporary screenshot cache right now." : "Cleared \(count) temporary screenshot set(s)."
       } catch {
-        operationMessage = "缓存清理失败：\(error.localizedDescription)"
+        operationMessage = "Cache cleanup failed: \(error.localizedDescription)"
       }
     }
   }

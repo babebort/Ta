@@ -28,25 +28,25 @@ struct CLIParseError: Error, Equatable, LocalizedError, Sendable {
 
 enum CLIParser {
     static let usage = """
-    用法：ta <命令> [参数]
+    Usage: ta <command> [arguments]
 
       ta status|capabilities|permissions [--json]
       ta screen list [--json]
-      ta window list [--app <名称或 Bundle ID>] [--json]
+      ta window list [--app <name or bundle ID>] [--json]
       ta capture screen [--display <ID>] [--output <PNG>] [--json]
       ta capture frontmost [--output <PNG>] [--json]
       ta capture window --window-id <ID> [--output <PNG>] [--json]
       ta capture region --display <ID> --x <N> --y <N> --width <N> --height <N>
-      ta ocr [last|图片路径] [--languages zh-Hans,en-US] [--json]
-      ta analyze [last|图片路径] [--task general|extractText|explainCode|tableMarkdown|formulaLaTeX]
-      ta translate [last|图片路径] --mode text|image [--cloud auto|allow|deny]
-      ta translate text --text <内容> [--cloud auto|allow|deny]
-      ta transform [last|图片路径] --recipe <JSON> [--output <PNG>] [--json]
+      ta ocr [last|image path] [--languages zh-Hans,en-US] [--json]
+      ta analyze [last|image path] [--task general|extractText|explainCode|tableMarkdown|formulaLaTeX]
+      ta translate [last|image path] --mode text|image [--cloud auto|allow|deny]
+      ta translate text --text <content> [--cloud auto|allow|deny]
+      ta transform [last|image path] --recipe <JSON> [--output <PNG>] [--json]
       ta transform undo|redo [--output <PNG>] [--json]
-      ta copy [last|图片路径] | --text <内容>
-      ta save [last|图片路径] --output <PNG>
+      ta copy [last|image path] | --text <content>
+      ta save [last|image path] --output <PNG>
 
-    通用参数：--json --timeout <秒> --request-id <ID> --socket <路径> --cloud auto|allow|deny
+    Common options: --json --timeout <seconds> --request-id <ID> --socket <path> --cloud auto|allow|deny
     """
 
     static func parse(_ rawArguments: [String]) throws -> CLIInvocation {
@@ -55,7 +55,7 @@ enum CLIParser {
 
         let outputFormat: CLIOutputFormat = removeFlag("--json", from: &arguments) ? .json : .human
         let timeout = try removeDoubleOption("--timeout", from: &arguments) ?? 10
-        guard timeout > 0 else { throw CLIParseError(message: "--timeout 必须大于 0。") }
+        guard timeout > 0 else { throw CLIParseError(message: "--timeout must be greater than 0.") }
         let requestID = try removeOption("--request-id", from: &arguments)
             ?? "ta_\(UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased())"
         let socketPath = try removeOption("--socket", from: &arguments)
@@ -66,16 +66,16 @@ enum CLIParser {
         }
         let cloud = try removeOption("--cloud", from: &arguments)
         if let cloud, AgentCloudPolicy(rawValue: cloud) == nil {
-            throw CLIParseError(message: "--cloud 只支持 auto、allow 或 deny。")
+            throw CLIParseError(message: "--cloud only supports auto, allow, or deny.")
         }
 
         var action = try parseAction(&arguments, cloud: cloud)
         guard arguments.isEmpty else {
-            throw CLIParseError(message: "无法识别的参数：\(arguments.joined(separator: " "))")
+            throw CLIParseError(message: "Unrecognized arguments: \(arguments.joined(separator: " "))")
         }
         if case .request(.deliverSave, var params) = action {
             guard let outputPath else {
-                throw CLIParseError(message: "save 需要 --output <PNG>。")
+                throw CLIParseError(message: "save requires --output <PNG>.")
             }
             params["path"] = .string(outputPath)
             action = .request(.deliverSave, params)
@@ -143,7 +143,7 @@ enum CLIParser {
         case "help", "--help", "-h":
             throw CLIParseError(message: usage)
         default:
-            throw CLIParseError(message: "未知命令：\(command)\n\n\(usage)")
+            throw CLIParseError(message: "Unknown command: \(command)\n\n\(usage)")
         }
     }
 
@@ -151,7 +151,7 @@ enum CLIParser {
         _ arguments: inout [String],
         params initialParams: [String: JSONValue]
     ) throws -> CLIAction {
-        guard !arguments.isEmpty else { throw CLIParseError(message: "capture 需要目标类型。") }
+        guard !arguments.isEmpty else { throw CLIParseError(message: "capture requires a target type.") }
         let target = arguments.removeFirst()
         var params = initialParams
         switch target {
@@ -164,7 +164,7 @@ enum CLIParser {
             return .request(.captureFrontmost, params)
         case "window":
             guard let id = try removeUInt32Option("--window-id", from: &arguments) else {
-                throw CLIParseError(message: "capture window 需要 --window-id <ID>。")
+                throw CLIParseError(message: "capture window requires --window-id <ID>.")
             }
             params["windowId"] = .integer(Int64(id))
             return .request(.captureWindow, params)
@@ -176,7 +176,7 @@ enum CLIParser {
                   let height = try removeDoubleOption("--height", from: &arguments),
                   width > 0, height > 0 else {
                 throw CLIParseError(
-                    message: "capture region 需要有效的 --display、--x、--y、--width 和 --height。"
+                    message: "capture region requires valid --display, --x, --y, --width, and --height."
                 )
             }
             params.merge([
@@ -186,7 +186,7 @@ enum CLIParser {
             ]) { _, new in new }
             return .request(.captureRegion, params)
         default:
-            throw CLIParseError(message: "未知截图目标：\(target)")
+            throw CLIParseError(message: "Unknown capture target: \(target)")
         }
     }
 
@@ -198,7 +198,7 @@ enum CLIParser {
         if arguments.first == "text", arguments.contains("--text") {
             arguments.removeFirst()
             guard let text = try removeOption("--text", from: &arguments), !text.isEmpty else {
-                throw CLIParseError(message: "translate text 需要 --text <内容>。")
+                throw CLIParseError(message: "translate text requires --text <content>.")
             }
             params["text"] = .string(text)
             return .request(.translateText, params)
@@ -209,7 +209,7 @@ enum CLIParser {
         switch mode {
         case "text": return .ocrThenTranslate(params)
         case "image": return .request(.translateImage, params)
-        default: throw CLIParseError(message: "--mode 只支持 text 或 image。")
+        default: throw CLIParseError(message: "--mode only supports text or image.")
         }
     }
 
@@ -226,7 +226,7 @@ enum CLIParser {
 
         try addImageInput(from: &arguments, to: &params)
         guard let recipePath = try removeOption("--recipe", from: &arguments) else {
-            throw CLIParseError(message: "transform 需要 --recipe <JSON 文件>。")
+            throw CLIParseError(message: "transform requires --recipe <JSON file>.")
         }
         params["action"] = .string("apply")
         params["recipePath"] = .string(
@@ -251,7 +251,7 @@ enum CLIParser {
         parent: String
     ) throws {
         guard arguments.first == expected else {
-            throw CLIParseError(message: "\(parent) 目前只支持子命令 \(expected)。")
+            throw CLIParseError(message: "\(parent) currently only supports the \(expected) subcommand.")
         }
         arguments.removeFirst()
     }
@@ -265,7 +265,7 @@ enum CLIParser {
     private static func removeOption(_ name: String, from arguments: inout [String]) throws -> String? {
         guard let index = arguments.firstIndex(of: name) else { return nil }
         guard arguments.indices.contains(index + 1), !arguments[index + 1].hasPrefix("--") else {
-            throw CLIParseError(message: "\(name) 缺少参数值。")
+            throw CLIParseError(message: "\(name) is missing its value.")
         }
         let value = arguments[index + 1]
         arguments.removeSubrange(index...index + 1)
@@ -278,7 +278,7 @@ enum CLIParser {
     ) throws -> Double? {
         guard let raw = try removeOption(name, from: &arguments) else { return nil }
         guard let value = Double(raw), value.isFinite else {
-            throw CLIParseError(message: "\(name) 需要有效数字。")
+            throw CLIParseError(message: "\(name) requires a valid number.")
         }
         return value
     }
@@ -289,7 +289,7 @@ enum CLIParser {
     ) throws -> UInt32? {
         guard let raw = try removeOption(name, from: &arguments) else { return nil }
         guard let value = UInt32(raw) else {
-            throw CLIParseError(message: "\(name) 需要 0 到 \(UInt32.max) 的整数。")
+            throw CLIParseError(message: "\(name) requires an integer between 0 and \(UInt32.max).")
         }
         return value
     }

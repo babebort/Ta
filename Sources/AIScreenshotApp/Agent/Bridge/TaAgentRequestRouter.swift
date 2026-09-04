@@ -18,15 +18,15 @@ actor TaAgentRequestRouter {
                 requestID: request.requestID,
                 error: AgentErrorPayload(
                     code: .protocolVersionMismatch,
-                    message: "Bridge 协议版本不兼容：收到 \(received)，当前支持 \(supported)。",
-                    hint: "请升级拓 App 或调用端。",
+                    message: "Bridge protocol version mismatch: received \(received), currently supported \(supported).",
+                    hint: "Please upgrade the Ta app or the calling client.",
                     retryable: false
                 )
             )
         } catch {
             return .failure(
                 requestID: request.requestID,
-                error: AgentErrorPayload(code: .invalidRequest, message: "请求协议无效。", retryable: false)
+                error: AgentErrorPayload(code: .invalidRequest, message: "The request protocol is invalid.", retryable: false)
             )
         }
 

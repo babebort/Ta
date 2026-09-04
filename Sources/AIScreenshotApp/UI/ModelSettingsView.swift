@@ -7,7 +7,7 @@ struct ModelSettingsView: View {
 
     @State private var state = AIProviderProfileState()
     @State private var selectedProfileID: UUID?
-    @State private var draft = AIProviderProfile(name: "新模型")
+    @State private var draft = AIProviderProfile(name: "New Model")
     @State private var apiKey = ""
     @State private var hasStoredKey = false
     @State private var selectedPreset = ModelProviderPreset.custom
@@ -65,14 +65,14 @@ struct ModelSettingsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onAppear { reload() }
         .confirmationDialog(
-            "删除“\(draft.trimmedName)”？",
+            "Delete \u{201C}\(draft.trimmedName)\u{201D}?",
             isPresented: $isConfirmingDelete,
             titleVisibility: .visible
         ) {
-            Button("删除配置和 API Key", role: .destructive, action: deleteSelectedProfile)
-            Button("取消", role: .cancel) {}
+            Button("Delete Configuration and API Key", role: .destructive, action: deleteSelectedProfile)
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("此操作只删除这套模型配置，不会影响其他配置。")
+            Text("This only removes this model configuration; other configurations are unaffected.")
         }
     }
 
@@ -84,22 +84,22 @@ struct ModelSettingsView: View {
                 .frame(width: 30, height: 30)
                 .background(TaPalette.cinnabar.opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
             VStack(alignment: .leading, spacing: 1) {
-                Text("AI 模型")
+                Text("AI Model")
                     .font(.headline)
                     .foregroundStyle(TaPalette.ink)
-                Text("配置一次，即可用于 AI 识图和截图翻译")
+                Text("Set up once, use for AI recognition and screenshot translation")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             Spacer()
             if state.profiles.isEmpty {
-                Text("尚未配置")
+                Text("Not configured yet")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
                 profileMenu
             }
-            Button("新增", systemImage: "plus", action: beginNewProfile)
+            Button("Add", systemImage: "plus", action: beginNewProfile)
                 .controlSize(.small)
         }
         .padding(.horizontal, 14)
@@ -120,10 +120,10 @@ struct ModelSettingsView: View {
                 }
             }
             Divider()
-            Button("添加另一套", systemImage: "plus", action: beginNewProfile)
+            Button("Add Another", systemImage: "plus", action: beginNewProfile)
         } label: {
             HStack(spacing: 5) {
-                Text(isCreatingProfile ? "新配置" : draft.trimmedName)
+                Text(isCreatingProfile ? "New Configuration" : draft.trimmedName)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.caption2)
@@ -179,7 +179,7 @@ struct ModelSettingsView: View {
             }
             Spacer(minLength: 8)
             if !state.profiles.isEmpty && currentStep == .provider {
-                Menu("我已经配置过") {
+                Menu("I've already set this up") {
                     ForEach(state.profiles) { profile in
                         Button(profile.trimmedName) { select(profile.id) }
                     }
@@ -211,10 +211,10 @@ struct ModelSettingsView: View {
     private var providerSelectionStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("选择 AI 服务商")
+                Text("Choose an AI Provider")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(TaPalette.ink)
-                Text("选择你常用的服务，拓会自动填写接口和推荐模型。")
+                Text("Pick the service you use, and Ta will auto-fill the endpoint and recommended models.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -230,7 +230,7 @@ struct ModelSettingsView: View {
 
             HStack {
                 Spacer()
-                Button("下一步") {
+                Button("Next") {
                     withAnimation(.easeOut(duration: 0.16)) { currentStep = .credentials }
                 }
                 .buttonStyle(.borderedProminent)
@@ -254,7 +254,7 @@ struct ModelSettingsView: View {
                         Text(preset.title)
                             .font(.callout.weight(.semibold))
                         if preset.isRecommended {
-                            Text("推荐")
+                            Text("Recommended")
                                 .font(.caption2.weight(.bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 1)
@@ -294,10 +294,10 @@ struct ModelSettingsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("配置 \(selectedPreset.title)")
+                            Text("Configure \(selectedPreset.title)")
                                 .font(.title3.weight(.semibold))
                                 .foregroundStyle(TaPalette.ink)
-                            Text("填写 API Key；推荐模型已自动带入，可按需修改。")
+                            Text("Enter your API key; recommended models are pre-filled and can be changed.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -310,11 +310,11 @@ struct ModelSettingsView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("API Key")
                             .font(.callout.weight(.semibold))
-                        SecureField(hasStoredKey ? "已保存；不更换可以留空" : "粘贴 API Key", text: $apiKey)
+                        SecureField(hasStoredKey ? "Saved; leave blank to keep it" : "Paste your API key", text: $apiKey)
                             .textFieldStyle(.roundedBorder)
                             .disabled(isTesting)
                         Label(
-                            hasStoredKey ? "已安全保存在本机钥匙串" : "仅保存在这台 Mac 的钥匙串，不会写入普通配置文件",
+                            hasStoredKey ? "Securely stored in this Mac's keychain" : "Stored only in this Mac's keychain, never written to a plain config file",
                             systemImage: hasStoredKey ? "checkmark.shield.fill" : "lock.shield"
                         )
                         .font(.caption2)
@@ -324,15 +324,15 @@ struct ModelSettingsView: View {
                     .background(compactSurface)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("推荐模型")
+                        Text("Recommended Models")
                             .font(.callout.weight(.semibold))
                         if selectedPreset.supportsVisionDirectly {
-                            modelField(title: "视觉模型", value: $draft.visionModel, suggestion: selectedPreset.suggestedVisionModel)
+                            modelField(title: "Vision Model", value: $draft.visionModel, suggestion: selectedPreset.suggestedVisionModel)
                         }
-                        modelField(title: "文字模型", value: $draft.textModel, suggestion: selectedPreset.suggestedTextModel)
+                        modelField(title: "Text Model", value: $draft.textModel, suggestion: selectedPreset.suggestedTextModel)
                         if !selectedPreset.supportsVisionDirectly {
                             Label(
-                                "Coding Plan 官方直连不支持图片输入；这套配置不会出现在 AI 识图或截图翻译列表中。",
+                                "The official Coding Plan connection doesn't support image input; this configuration won't appear in AI recognition or screenshot translation lists.",
                                 systemImage: "info.circle.fill"
                             )
                             .font(.caption2)
@@ -352,19 +352,19 @@ struct ModelSettingsView: View {
 
             Divider().overlay(TaPalette.hairline)
             HStack(spacing: 9) {
-                Button("上一步") {
+                Button("Back") {
                     withAnimation(.easeOut(duration: 0.16)) { currentStep = .provider }
                 }
                 Spacer()
                 if isTesting {
                     ProgressView().controlSize(.small)
-                    Text("正在验证…")
+                    Text("Verifying\u{2026}")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button("仅保存", action: saveOnly)
+                Button("Save Only", action: saveOnly)
                     .disabled(isTesting || !setupProgress.isComplete)
-                Button("测试并保存", action: saveAndTest)
+                Button("Test and Save", action: saveAndTest)
                     .buttonStyle(.borderedProminent)
                     .disabled(isTesting || !setupProgress.isComplete)
                     .keyboardShortcut(.defaultAction)
@@ -381,7 +381,7 @@ struct ModelSettingsView: View {
                 TextField(title, text: value)
                     .textFieldStyle(.roundedBorder)
                 if let suggestion {
-                    Button("推荐") { value.wrappedValue = suggestion }
+                    Button("Use Suggested") { value.wrappedValue = suggestion }
                         .controlSize(.small)
                 }
             }
@@ -393,13 +393,13 @@ struct ModelSettingsView: View {
         DisclosureGroup(isExpanded: $isShowingAdvanced) {
             VStack(alignment: .leading, spacing: 9) {
                 Divider().overlay(TaPalette.hairline)
-                LabeledContent("配置名称") {
-                    TextField("例如：DeepSeek 日常", text: $draft.name)
+                LabeledContent("Configuration Name") {
+                    TextField("e.g. DeepSeek Everyday", text: $draft.name)
                         .textFieldStyle(.roundedBorder)
                         .frame(minWidth: 350)
                 }
-                LabeledContent("接口协议") {
-                    Picker("接口协议", selection: $draft.providerKind) {
+                LabeledContent("API Protocol") {
+                    Picker("API Protocol", selection: $draft.providerKind) {
                         ForEach(VisionProviderKind.allCases, id: \.rawValue) { provider in
                             Text(provider.displayName).tag(provider)
                         }
@@ -407,13 +407,13 @@ struct ModelSettingsView: View {
                     .labelsHidden()
                     .frame(width: 210)
                 }
-                LabeledContent("服务地址") {
+                LabeledContent("Endpoint URL") {
                     TextField("https://api.example.com/v1", text: $draft.baseURL)
                         .textFieldStyle(.roundedBorder)
                         .frame(minWidth: 350)
                 }
-                LabeledContent("识图默认任务") {
-                    Picker("识图默认任务", selection: $taskTemplate) {
+                LabeledContent("Default Recognition Task") {
+                    Picker("Default Recognition Task", selection: $taskTemplate) {
                         ForEach(MultimodalTaskTemplate.allCases, id: \.rawValue) { task in
                             Text(task.displayName).tag(task.rawValue)
                         }
@@ -422,14 +422,14 @@ struct ModelSettingsView: View {
                     .frame(width: 210)
                 }
                 if hasStoredKey {
-                    Button("移除这套配置的 API Key", role: .destructive, action: removeKey)
+                    Button("Remove This Configuration's API Key", role: .destructive, action: removeKey)
                         .controlSize(.small)
                         .disabled(isTesting)
                 }
             }
             .padding(.top, 7)
         } label: {
-            Label("高级设置 · 配置名称、服务地址与默认任务", systemImage: "slider.horizontal.3")
+            Label("Advanced Settings \u{00B7} Name, Endpoint, and Default Task", systemImage: "slider.horizontal.3")
                 .font(.callout.weight(.medium))
                 .foregroundStyle(TaPalette.ink)
         }
@@ -449,8 +449,8 @@ struct ModelSettingsView: View {
         } else if statusMessage == nil {
             Label(
                 selectedPreset.supportsVisionDirectly
-                    ? "这套配置可以同时用于 AI 识图和截图翻译。"
-                    : "这套配置可用于文字请求；Coding Plan 不提供截图视觉直连。",
+                    ? "This configuration can be used for both AI recognition and screenshot translation."
+                    : "This configuration can be used for text requests; Coding Plan has no direct screenshot vision support.",
                 systemImage: "checkmark.circle.fill"
             )
                 .font(.caption)
@@ -471,13 +471,13 @@ struct ModelSettingsView: View {
                     .font(.system(size: 22))
                     .foregroundStyle(.green)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(hasVerifiedConnection ? "连接成功" : "配置已保存")
+                    Text(hasVerifiedConnection ? "Connected Successfully" : "Configuration Saved")
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(TaPalette.ink)
                     Text(
                         hasVerifiedConnection
-                            ? "配置已保存到本机，后续升级不需要重新填写。"
-                            : "模型信息已经完整，建议先测试一次连接。"
+                            ? "Saved locally on this Mac; you won't need to re-enter it after future updates."
+                            : "The model info is complete; it's recommended to test the connection first."
                     )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -497,21 +497,21 @@ struct ModelSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Label(selectedPreset.supportsVisionDirectly ? "可用" : "仅文字", systemImage: "circle.fill")
+                    Label(selectedPreset.supportsVisionDirectly ? "Available" : "Text Only", systemImage: "circle.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(selectedPreset.supportsVisionDirectly ? .green : .orange)
                 }
                 Divider().overlay(TaPalette.hairline)
                 if selectedPreset.supportsVisionDirectly {
-                    modelSummaryRow("视觉模型", draft.visionModel)
+                    modelSummaryRow("Vision Model", draft.visionModel)
                 }
-                modelSummaryRow("文字模型", draft.textModel)
+                modelSummaryRow("Text Model", draft.textModel)
                 HStack(spacing: 18) {
                     if selectedPreset.supportsVisionDirectly {
-                        Label("AI 识图", systemImage: "photo")
-                        Label("截图翻译", systemImage: "character.book.closed")
+                        Label("AI Recognition", systemImage: "photo")
+                        Label("Screenshot Translation", systemImage: "character.book.closed")
                     } else {
-                        Label("文字模型配置", systemImage: "text.bubble")
+                        Label("Text Model Configuration", systemImage: "text.bubble")
                     }
                 }
                 .font(.caption.weight(.medium))
@@ -522,10 +522,10 @@ struct ModelSettingsView: View {
 
             if selectedPreset.supportsVisionDirectly {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("应用到功能")
+                    Text("Apply to Features")
                         .font(.callout.weight(.semibold))
-                    LabeledContent("识图默认") {
-                        Picker("识图默认", selection: activeProfileBinding) {
+                    LabeledContent("Recognition Default") {
+                        Picker("Recognition Default", selection: activeProfileBinding) {
                             ForEach(activeReadyProfiles) { profile in
                                 Text(profile.trimmedName).tag(Optional(profile.id))
                             }
@@ -533,8 +533,8 @@ struct ModelSettingsView: View {
                         .labelsHidden()
                         .frame(width: 250)
                     }
-                    LabeledContent("翻译使用") {
-                        Picker("翻译使用", selection: translationProfileBinding) {
+                    LabeledContent("Used for Translation") {
+                        Picker("Used for Translation", selection: translationProfileBinding) {
                             ForEach(translationReadyProfiles) { profile in
                                 Text(profile.trimmedName).tag(Optional(profile.id))
                             }
@@ -547,7 +547,7 @@ struct ModelSettingsView: View {
                 .background(compactSurface)
             } else {
                 Label(
-                    "智谱 Coding Plan 直连仅支持文字模型，因此不会被设为 AI 识图默认，也不会出现在截图翻译模型列表。",
+                    "Zhipu Coding Plan's direct connection only supports text models, so it can't be set as the AI recognition default or appear in the screenshot translation model list.",
                     systemImage: "info.circle.fill"
                 )
                 .font(.caption)
@@ -565,14 +565,14 @@ struct ModelSettingsView: View {
 
             Spacer(minLength: 0)
             HStack {
-                Button("添加另一套", action: beginNewProfile)
+                Button("Add Another", action: beginNewProfile)
                 Spacer()
-                Button(hasVerifiedConnection ? "重新测试" : "测试连接") {
+                Button(hasVerifiedConnection ? "Test Again" : "Test Connection") {
                     currentStep = .credentials
                     saveAndTest()
                 }
                 .disabled(isTesting)
-                Button("完成") { NSApp.keyWindow?.performClose(nil) }
+                Button("Done") { NSApp.keyWindow?.performClose(nil) }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
@@ -601,12 +601,12 @@ struct ModelSettingsView: View {
 
     private var profileActionsMenu: some View {
         Menu {
-            Button("复制配置", systemImage: "doc.on.doc", action: duplicateSelectedProfile)
+            Button("Duplicate Configuration", systemImage: "doc.on.doc", action: duplicateSelectedProfile)
             if selectedPreset.supportsVisionDirectly, state.activeProfileID != draft.id {
-                Button("设为 AI 识图默认", systemImage: "checkmark.circle", action: setAsActive)
+                Button("Set as AI Recognition Default", systemImage: "checkmark.circle", action: setAsActive)
             }
             Divider()
-            Button("删除配置", systemImage: "trash", role: .destructive) {
+            Button("Delete Configuration", systemImage: "trash", role: .destructive) {
                 isConfirmingDelete = true
             }
         } label: {
@@ -628,7 +628,7 @@ struct ModelSettingsView: View {
             set: { id in
                 do {
                     state = try profileStore.setActiveProfile(id: id)
-                    showStatus("已更新 AI 识图默认模型。", style: .success)
+                    showStatus("Updated the AI recognition default model.", style: .success)
                 } catch {
                     showStatus(error.localizedDescription, style: .error)
                 }
@@ -642,7 +642,7 @@ struct ModelSettingsView: View {
             set: { id in
                 do {
                     state = try profileStore.setTranslationProfile(id: id)
-                    showStatus("已更新截图翻译模型。", style: .success)
+                    showStatus("Updated the screenshot translation model.", style: .success)
                 } catch {
                     showStatus(error.localizedDescription, style: .error)
                 }
@@ -683,7 +683,7 @@ struct ModelSettingsView: View {
     }
 
     private func beginNewProfile() {
-        let profile = AIProviderProfile(name: "新模型 \(state.profiles.count + 1)")
+        let profile = AIProviderProfile(name: "New Model \(state.profiles.count + 1)")
         selectedProfileID = profile.id
         draft = profile
         apiKey = ""
@@ -700,13 +700,13 @@ struct ModelSettingsView: View {
         guard isDraftSaved else { return }
         var copy = draft
         copy.id = UUID()
-        copy.name = "\(draft.trimmedName) 副本"
+        copy.name = "\(draft.trimmedName) Copy"
         copy.visionVerifiedAt = nil
         do {
             let key = try? profileStore.apiKey(for: draft.id)
             _ = try profileStore.saveProfile(copy, apiKey: key)
             reload(selecting: copy.id)
-            showStatus("已复制配置。", style: .success)
+            showStatus("Configuration duplicated.", style: .success)
         } catch {
             showStatus(error.localizedDescription, style: .error)
         }
@@ -729,7 +729,7 @@ struct ModelSettingsView: View {
         do {
             try persistDraft()
             state = try profileStore.setActiveProfile(id: draft.id)
-            showStatus("已设为 AI 识图默认配置。", style: .success)
+            showStatus("Set as the AI recognition default configuration.", style: .success)
         } catch {
             showStatus(error.localizedDescription, style: .error)
         }
@@ -738,7 +738,7 @@ struct ModelSettingsView: View {
     private func apply(_ preset: ModelProviderPreset) {
         let previousPreset = selectedPreset
         let wasGenericName = draft.trimmedName.isEmpty
-            || draft.trimmedName.hasPrefix("新模型")
+            || draft.trimmedName.hasPrefix("New Model")
             || draft.trimmedName == previousPreset.suggestedConfigurationName
         selectedPreset = preset
         providerChosen = true
@@ -763,7 +763,7 @@ struct ModelSettingsView: View {
     private func saveOnly() {
         do {
             try persistDraft()
-            showStatus("配置已保存。", style: .success)
+            showStatus("Configuration saved.", style: .success)
         } catch {
             showStatus(error.localizedDescription, style: .error)
         }
@@ -779,8 +779,8 @@ struct ModelSettingsView: View {
         isTesting = true
         showStatus(
             selectedPreset.supportsVisionDirectly
-                ? "已保存，正在测试文字模型和视觉模型…"
-                : "已保存，正在测试 Coding Plan 文字模型…",
+                ? "Saved, testing text and vision models\u{2026}"
+                : "Saved, testing the Coding Plan text model\u{2026}",
             style: .neutral
         )
         Task {
@@ -790,16 +790,16 @@ struct ModelSettingsView: View {
                 let successMessage: String
                 if selectedPreset.supportsVisionDirectly {
                     let visionResponse = try await recognitionService.testConnection(profile: draft)
-                    successMessage = "两种模型连接成功。文字：\(textResponse.prefix(24)) · 视觉：\(visionResponse.prefix(24))"
+                    successMessage = "Both models connected successfully. Text: \(textResponse.prefix(24)) \u{00B7} Vision: \(visionResponse.prefix(24))"
                 } else {
-                    successMessage = "Coding Plan 文字模型连接成功：\(textResponse.prefix(36))"
+                    successMessage = "Coding Plan text model connected successfully: \(textResponse.prefix(36))"
                 }
                 _ = try profileStore.saveProfile(draft)
                 reload(selecting: draft.id)
                 showStatus(successMessage, style: .success)
                 currentStep = .complete
             } catch {
-                showStatus("配置已保存，但连接测试失败：\(error.localizedDescription)", style: .error)
+                showStatus("Configuration saved, but the connection test failed: \(error.localizedDescription)", style: .error)
                 currentStep = .credentials
             }
             isTesting = false
@@ -815,7 +815,7 @@ struct ModelSettingsView: View {
         }
         let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedKey.isEmpty || hasStoredKey else {
-            throw ModelConfigurationError.invalid("请粘贴 API Key。")
+            throw ModelConfigurationError.invalid("Please paste an API key.")
         }
         state = try profileStore.saveProfile(draft, apiKey: trimmedKey.isEmpty ? nil : trimmedKey)
         apiKey = ""
@@ -828,7 +828,7 @@ struct ModelSettingsView: View {
             try profileStore.removeAPIKey(for: draft.id)
             apiKey = ""
             hasStoredKey = false
-            showStatus("API Key 已移除，这套配置暂时不可用。", style: .neutral)
+            showStatus("API key removed; this configuration is temporarily unavailable.", style: .neutral)
         } catch {
             showStatus(error.localizedDescription, style: .error)
         }
@@ -899,38 +899,38 @@ enum ModelProviderPreset: String, CaseIterable, Identifiable {
         case .openRouter: "OpenRouter"
         case .anthropic: "Claude"
         case .gemini: "Gemini"
-        case .zhipuAPI: "智谱 API"
-        case .zhipuCodingPlan: "智谱 Coding Plan"
+        case .zhipuAPI: "Zhipu API"
+        case .zhipuCodingPlan: "Zhipu Coding Plan"
         case .azure: "Azure"
-        case .custom: "自定义"
+        case .custom: "Custom"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .deepSeek: "自动填写常用模型"
-        case .openAI: "OpenAI 官方接口"
-        case .openRouter: "统一接入多家模型"
+        case .deepSeek: "Auto-fills common models"
+        case .openAI: "OpenAI's official API"
+        case .openRouter: "Unified access to many models"
         case .anthropic: "Anthropic Messages"
-        case .gemini: "Google AI 接口"
-        case .zhipuAPI: "通用开放平台 API"
-        case .zhipuCodingPlan: "编码套餐专属接口"
-        case .azure: "填写专属资源地址"
-        case .custom: "本地或兼容服务"
+        case .gemini: "Google AI API"
+        case .zhipuAPI: "General open platform API"
+        case .zhipuCodingPlan: "Dedicated coding-plan endpoint"
+        case .azure: "Enter your own resource endpoint"
+        case .custom: "Local or compatible service"
         }
     }
 
     var guidedSubtitle: String {
         switch self {
-        case .deepSeek: "中文理解自然，适合识图和翻译"
-        case .openAI: "综合能力强，适合复杂截图"
-        case .gemini: "Google 视觉与文字模型"
-        case .anthropic: "Anthropic 视觉与文字模型"
-        case .openRouter: "一个接口使用多家模型"
-        case .zhipuAPI: "通用额度，支持识图和翻译"
-        case .zhipuCodingPlan: "订阅套餐，仅支持文字模型直连"
-        case .azure: "企业 Azure OpenAI 服务"
-        case .custom: "本地模型或兼容接口"
+        case .deepSeek: "Natural Chinese understanding, good for recognition and translation"
+        case .openAI: "Strong general ability, good for complex screenshots"
+        case .gemini: "Google vision and text models"
+        case .anthropic: "Anthropic vision and text models"
+        case .openRouter: "One API for many models"
+        case .zhipuAPI: "General quota, supports recognition and translation"
+        case .zhipuCodingPlan: "Subscription plan, text-model direct connection only"
+        case .azure: "Enterprise Azure OpenAI service"
+        case .custom: "Local model or compatible API"
         }
     }
 
@@ -1004,7 +1004,7 @@ enum ModelProviderPreset: String, CaseIterable, Identifiable {
     }
 
     var suggestedConfigurationName: String {
-        self == .custom ? "自定义模型" : "\(title) 日常"
+        self == .custom ? "Custom Model" : "\(title) Everyday"
     }
 
     var requiresCustomEndpoint: Bool { self == .azure || self == .custom }
@@ -1030,9 +1030,9 @@ enum ModelSetupStep: Int, CaseIterable, Equatable {
 
     var title: String {
         switch self {
-        case .provider: "选择服务商"
-        case .credentials: "填写 API Key"
-        case .complete: "测试并保存"
+        case .provider: "Choose Provider"
+        case .credentials: "Enter API Key"
+        case .complete: "Test and Save"
         }
     }
 
@@ -1058,11 +1058,11 @@ struct ModelSetupProgress: Equatable {
     }
 
     var nextStep: String {
-        if !hasEndpoint { return "先选择服务商" }
-        if !hasAPIKey { return "接下来填写 API Key" }
-        if !hasVisionModel { return "填写视觉模型" }
-        if !hasTextModel { return "最后填写文字模型" }
-        return "可以保存并测试连接"
+        if !hasEndpoint { return "Choose a provider first" }
+        if !hasAPIKey { return "Next, enter your API key" }
+        if !hasVisionModel { return "Enter the vision model" }
+        if !hasTextModel { return "Finally, enter the text model" }
+        return "Ready to save and test the connection"
     }
 }
 

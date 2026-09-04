@@ -95,12 +95,12 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .permissions: "权限"
-        case .general: "常规"
-        case .hotKeys: "快捷键"
-        case .recognition: "识别"
-        case .translation: "翻译"
-        case .models: "AI 模型"
+        case .permissions: "Permissions"
+        case .general: "General"
+        case .hotKeys: "Hotkeys"
+        case .recognition: "Recognition"
+        case .translation: "Translation"
+        case .models: "AI Models"
         case .agent: "Agent"
         }
     }
@@ -124,49 +124,49 @@ private struct PermissionsSettingsView: View {
 
     var body: some View {
         Form {
-            Section("屏幕录制") {
+            Section("Screen Recording") {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Label(
-                            isGranted ? "已允许" : "尚未允许",
+                            isGranted ? "Granted" : "Not granted",
                             systemImage: isGranted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                         )
                         .foregroundStyle(isGranted ? .green : .orange)
-                        Text("只读取你主动框选的区域；应用不会在后台持续录屏。")
+                        Text("Only captures the region you select; the app never records the screen continuously in the background.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button(isGranted ? "重新检测" : "请求权限") {
+                    Button(isGranted ? "Recheck" : "Request Access") {
                         if !isGranted {
                             _ = ScreenCapturePermissionService.request()
                         }
                         isGranted = ScreenCapturePermissionService.isGranted
                     }
-                    Button("打开系统设置") {
+                    Button("Open System Settings") {
                         ScreenCapturePermissionService.openSystemSettings()
                     }
                 }
             }
 
-            Section("辅助功能") {
+            Section("Accessibility") {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Label(
-                            accessibilityGranted ? "已允许" : "仅自动滚动时需要",
+                            accessibilityGranted ? "Granted" : "Needed for auto-scroll only",
                             systemImage: accessibilityGranted ? "checkmark.circle.fill" : "hand.raised.fill"
                         )
                         .foregroundStyle(accessibilityGranted ? .green : .secondary)
-                        Text("手动长截图不需要此权限；只有你主动开启自动滚动时才使用。")
+                        Text("Manual long screenshots don't need this permission; it's only used if you turn on auto-scroll.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button(accessibilityGranted ? "重新检测" : "请求权限") {
+                    Button(accessibilityGranted ? "Recheck" : "Request Access") {
                         if !accessibilityGranted { _ = AccessibilityAutoScrollService.request() }
                         accessibilityGranted = AccessibilityAutoScrollService.isGranted
                     }
-                    Button("打开系统设置") { AccessibilityAutoScrollService.openSystemSettings() }
+                    Button("Open System Settings") { AccessibilityAutoScrollService.openSystemSettings() }
                 }
             }
         }
@@ -187,34 +187,34 @@ private struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
-            Section("截图完成后") {
-                Picker("默认动作", selection: $postCaptureAction) {
-                    Text("每次让我选择（推荐）").tag(PostCaptureAction.choose.rawValue)
-                    Text("识别内容并复制").tag(PostCaptureAction.recognize.rawValue)
-                    Text("翻译文字并复制").tag(PostCaptureAction.translateText.rawValue)
-                    Text("复制图片").tag(PostCaptureAction.copyImage.rawValue)
-                    Text("钉在屏幕上").tag(PostCaptureAction.pin.rawValue)
-                    Text("打开标注").tag(PostCaptureAction.edit.rawValue)
-                    Text("记住上一次操作").tag(PostCaptureAction.rememberLast.rawValue)
+            Section("After Capture") {
+                Picker("Default Action", selection: $postCaptureAction) {
+                    Text("Ask me every time (recommended)").tag(PostCaptureAction.choose.rawValue)
+                    Text("Recognize and copy").tag(PostCaptureAction.recognize.rawValue)
+                    Text("Translate and copy").tag(PostCaptureAction.translateText.rawValue)
+                    Text("Copy image").tag(PostCaptureAction.copyImage.rawValue)
+                    Text("Pin to screen").tag(PostCaptureAction.pin.rawValue)
+                    Text("Open annotation").tag(PostCaptureAction.edit.rawValue)
+                    Text("Remember last action").tag(PostCaptureAction.rememberLast.rawValue)
                 }
-                Text("这个设置只影响通用截图；极速识别、截图翻译、复制图片和钉图快捷键会直接执行。")
+                Text("This only affects general captures; quick recognize, capture-translate, copy image, and pin hotkeys run directly.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("结果胶囊") {
+            Section("Result Bar") {
                 HStack {
-                    Text("自动隐藏")
+                    Text("Auto-hide")
                     Slider(value: $resultBarDuration, in: 1.5...8, step: 0.5)
-                    Text("\(resultBarDuration, specifier: "%.1f") 秒")
+                    Text("\(resultBarDuration, specifier: "%.1f") sec")
                         .monospacedDigit()
                         .frame(width: 54, alignment: .trailing)
                 }
             }
 
-            Section("历史与隐私") {
-                Toggle("在本机保存截图历史", isOn: $saveHistory)
-                Text(saveHistory ? "截图只保存在本机；云端调用仍会单独提示。" : "当前不会持久化截图文件。")
+            Section("History & Privacy") {
+                Toggle("Save screenshot history locally", isOn: $saveHistory)
+                Text(saveHistory ? "Screenshots are saved locally only; cloud calls will still prompt separately." : "Screenshot files are not persisted right now.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -236,11 +236,11 @@ private struct RecognitionSettingsView: View {
 
     var body: some View {
         Form {
-            Section("默认识别路径") {
-                Picker("识别方式", selection: $recognitionRoute) {
-                    Text("OCR 引擎（推荐）").tag(RecognitionRoute.localOCR.rawValue)
-                    Text("多模态大模型").tag(RecognitionRoute.multimodal.rawValue)
-                    Text("智能路由").tag(RecognitionRoute.smart.rawValue)
+            Section("Default Recognition Route") {
+                Picker("Recognition Method", selection: $recognitionRoute) {
+                    Text("OCR engine (recommended)").tag(RecognitionRoute.localOCR.rawValue)
+                    Text("Multimodal model").tag(RecognitionRoute.multimodal.rawValue)
+                    Text("Smart routing").tag(RecognitionRoute.smart.rawValue)
                 }
                 Text(routeDescription)
                     .font(.caption)
@@ -248,16 +248,16 @@ private struct RecognitionSettingsView: View {
             }
 
             Section("OCR") {
-                Picker("OCR 引擎", selection: $ocrEngine) {
+                Picker("OCR Engine", selection: $ocrEngine) {
                     ForEach(OCREnginePreference.allCases, id: \.rawValue) { engine in
                         Text(engine.displayName).tag(engine.rawValue)
                     }
                 }
-                TextField("识别语言", text: $languages)
+                TextField("Recognition Language", text: $languages)
                 Text(languageDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("自动合并疑似断行", isOn: $mergeWrappedLines)
+                Toggle("Auto-merge suspected line wraps", isOn: $mergeWrappedLines)
                 if selectedEngine.usesOptionalPack {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
@@ -274,10 +274,10 @@ private struct RecognitionSettingsView: View {
                                 .buttonStyle(.borderedProminent)
                                 .disabled(packInstaller.isBusy)
                             }
-                            Button("手动导入…") { importPack() }
+                            Button("Import Manually…") { importPack() }
                                 .disabled(packInstaller.isBusy)
                             if packInstaller.installedInfo != nil {
-                                Button("卸载", role: .destructive) {
+                                Button("Remove", role: .destructive) {
                                     showingRemoveConfirmation = true
                                 }
                                 .disabled(packInstaller.isBusy)
@@ -295,7 +295,7 @@ private struct RecognitionSettingsView: View {
                                     Text(progress.stage.rawValue)
                                     Spacer()
                                     if packInstaller.isBusy {
-                                        Button("取消") { packInstaller.cancel() }
+                                        Button("Cancel") { packInstaller.cancel() }
                                             .buttonStyle(.link)
                                     }
                                 }
@@ -304,7 +304,7 @@ private struct RecognitionSettingsView: View {
                             }
                         }
                         if let availability = packInstaller.availability, selectedEngine == .paddleOCR {
-                            Text("可用版本 \(availability.package.version) · \(availability.formattedSize) · \(availability.isLocal ? "本机发行包" : "在线下载") · Apple Silicon")
+                            Text("Available version \(availability.package.version) · \(availability.formattedSize) · \(availability.isLocal ? "bundled locally" : "online download") · Apple Silicon")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -318,8 +318,8 @@ private struct RecognitionSettingsView: View {
                         Text(packStatus).font(.caption).foregroundStyle(.secondary)
                     }
                     Text(selectedEngine == .paddleOCR
-                         ? "PaddleOCR 在本机离线运行；选择后会后台预热并复用模型，闲置 5 分钟自动释放约 700–800 MB 的临时内存。安装时仍会完整校验增强包。"
-                         : "增强包必须包含 manifest.json 和可执行适配器；未安装时自动回退 Apple Vision。")
+                         ? "PaddleOCR runs fully offline on-device; once selected it pre-warms and reuses the model in the background, releasing the ~700–800 MB of temporary memory after 5 minutes idle. Installs are still fully verified."
+                         : "The enhancement pack must include manifest.json and an executable adapter; it falls back to Apple Vision automatically when not installed.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else if selectedEngine == .deepSeekOCR2 {
@@ -327,15 +327,15 @@ private struct RecognitionSettingsView: View {
                 }
             }
 
-            Section("数据路径") {
+            Section("Data Path") {
                 Label(
-                    selectedEngine.isLocalEngine ? "普通识别始终在本机完成" : "截图会发送到你配置的 DeepSeek OCR 服务",
+                    selectedEngine.isLocalEngine ? "Standard recognition always runs on-device" : "Screenshots are sent to your configured DeepSeek OCR service",
                     systemImage: selectedEngine.isLocalEngine ? "lock.shield.fill" : "network"
                 )
                 .foregroundStyle(selectedEngine.isLocalEngine ? .green : .orange)
                 Text(selectedEngine.isLocalEngine
-                     ? "低置信度结果只会提示增强，不会静默上传。"
-                     : "只有选择 DeepSeek-OCR-2 时才上传；切回 Apple Vision 或 PaddleOCR 即恢复本机离线识别。")
+                     ? "Low-confidence results only prompt for enhancement — nothing is uploaded silently."
+                     : "Uploads happen only when DeepSeek-OCR-2 is selected; switching back to Apple Vision or PaddleOCR restores fully offline recognition.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -352,16 +352,16 @@ private struct RecognitionSettingsView: View {
             packInstaller.prewarm(selectedEngine)
         }
         .confirmationDialog(
-            "卸载 \(selectedEngine.displayName)？",
+            "Remove \(selectedEngine.displayName)?",
             isPresented: $showingRemoveConfirmation,
             titleVisibility: .visible
         ) {
-            Button("卸载增强包", role: .destructive) {
+            Button("Remove Enhancement Pack", role: .destructive) {
                 packInstaller.remove(selectedEngine)
             }
-            Button("取消", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("卸载后截图识别会立即回退到 Apple Vision，主功能仍可使用。")
+            Text("Recognition will immediately fall back to Apple Vision after removal; core features remain available.")
         }
     }
 
@@ -372,7 +372,7 @@ private struct RecognitionSettingsView: View {
     private func importPack() {
         do {
             if let version = try packInstaller.manager.chooseAndImport(selectedEngine) {
-                packStatus = "已导入版本 \(version)"
+                packStatus = "Imported version \(version)"
                 packInstaller.refresh(selectedEngine)
                 packInstaller.prewarm(selectedEngine)
             }
@@ -383,42 +383,42 @@ private struct RecognitionSettingsView: View {
 
     private var installedLabel: String {
         if let info = packInstaller.installedInfo {
-            return "已安装版本 \(info.version)"
+            return "Installed version \(info.version)"
         }
-        return "增强包未安装，当前自动回退 Apple Vision"
+        return "Enhancement pack not installed, currently falling back to Apple Vision"
     }
 
     private var languageDescription: String {
         switch selectedEngine {
         case .appleVision:
-            "按优先级填写 Apple Vision 语言代码，以英文逗号分隔。"
+            "Enter Apple Vision language codes in priority order, comma-separated."
         case .rapidOCR, .paddleOCR:
-            "增强包使用内置中英文模型；此语言列表只在回退 Apple Vision 时生效。"
+            "The enhancement pack uses a built-in Chinese/English model; this language list only applies when falling back to Apple Vision."
         case .deepSeekOCR2:
-            "DeepSeek-OCR-2 自动识别多语言；这里的代码用于结果元数据和回退提示。"
+            "DeepSeek-OCR-2 recognizes multiple languages automatically; these codes are used for result metadata and fallback hints."
         }
     }
 
     private var installButtonLabel: String {
-        guard let installed = packInstaller.installedInfo else { return "下载并安装" }
-        guard let available = packInstaller.availability else { return "重新安装" }
+        guard let installed = packInstaller.installedInfo else { return "Download & Install" }
+        guard let available = packInstaller.availability else { return "Reinstall" }
         return available.package.version.compare(installed.version, options: .numeric) == .orderedDescending
-            ? "更新到 \(available.package.version)"
-            : "重新安装"
+            ? "Update to \(available.package.version)"
+            : "Reinstall"
     }
 
     private var routeDescription: String {
         switch RecognitionRoute(rawValue: recognitionRoute) ?? .localOCR {
         case .localOCR:
             selectedEngine == .deepSeekOCR2
-                ? "使用 DeepSeek-OCR-2 服务识别，本次截图会发送到你配置的端点。"
-                : "使用所选 OCR 引擎在本机识别；增强包未安装时回退 Apple Vision，不需要 API Key。"
+                ? "Recognizes via the DeepSeek-OCR-2 service; this screenshot will be sent to your configured endpoint."
+                : "Recognizes on-device using the selected OCR engine; falls back to Apple Vision when the enhancement pack isn't installed, no API key needed."
         case .multimodal:
-            "把主动框选的图片发送给已配置的 OpenAI-compatible 视觉模型，并复制模型结果。"
+            "Sends the selected image to your configured OpenAI-compatible vision model and copies the model's result."
         case .smart:
             selectedEngine == .deepSeekOCR2
-                ? "DeepSeek-OCR-2 本身是远程识别；如需“本机优先、低置信度再上传”，请选择 Apple Vision 或 PaddleOCR。"
-                : "先在本机 OCR；低置信度时提示 AI 增强，不会静默上传图片。"
+                ? "DeepSeek-OCR-2 is itself a remote recognizer; for \"local-first, upload only on low confidence\" choose Apple Vision or PaddleOCR."
+                : "Runs local OCR first; prompts for AI enhancement on low confidence, without silently uploading the image."
         }
     }
 }
@@ -438,42 +438,42 @@ private struct DeepSeekOCRConfigurationRows: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label(
-                    configurationReady ? "DeepSeek-OCR-2 服务已配置" : "需要配置 DeepSeek-OCR-2 服务",
+                    configurationReady ? "DeepSeek-OCR-2 service configured" : "DeepSeek-OCR-2 service needs configuration",
                     systemImage: configurationReady ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                 )
                 .foregroundStyle(configurationReady ? .green : .orange)
                 Spacer()
                 Link(
-                    "官方模型页",
+                    "Official Model Page",
                     destination: URL(string: "https://huggingface.co/deepseek-ai/DeepSeek-OCR-2")!
                 )
                 .font(.caption)
             }
 
             TextField(
-                "服务地址",
+                "Service URL",
                 text: $baseURL,
                 prompt: Text(DeepSeekOCR2Client.recommendedLocalBaseURL)
             )
-            TextField("模型名", text: $model)
-            Picker("输出格式", selection: $promptMode) {
+            TextField("Model Name", text: $model)
+            Picker("Output Format", selection: $promptMode) {
                 ForEach(DeepSeekOCRPromptMode.allCases, id: \.rawValue) { mode in
                     Text(mode.displayName).tag(mode.rawValue)
                 }
             }
-            SecureField(hasStoredKey ? "输入新 Key 以更新（本机服务可留空）" : "API Key（本机服务可留空）", text: $apiKey)
+            SecureField(hasStoredKey ? "Enter a new key to update (leave blank for local service)" : "API Key (leave blank for local service)", text: $apiKey)
 
             HStack {
-                Button("填入本机默认地址") {
+                Button("Fill In Local Default") {
                     baseURL = DeepSeekOCR2Client.recommendedLocalBaseURL
                     model = DeepSeekOCR2Client.latestOfficialModel
-                    statusMessage = "已填入 vLLM 默认地址；请先确保服务已启动。"
+                    statusMessage = "Filled in the default vLLM address; make sure the service is running first."
                 }
                 if hasStoredKey {
-                    Button("移除 Key", role: .destructive) { removeKey() }
+                    Button("Remove Key", role: .destructive) { removeKey() }
                 }
                 Spacer()
-                Button(hasStoredKey ? "更新 Key" : "保存 Key") { saveKey() }
+                Button(hasStoredKey ? "Update Key" : "Save Key") { saveKey() }
                     .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
@@ -487,10 +487,10 @@ private struct DeepSeekOCRConfigurationRows: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("当前最新专用模型为 DeepSeek-OCR-2。它约 6.79 GB，官方推理方案面向 CUDA，因此本应用连接 vLLM/SGLang 或兼容服务，不会在 Mac 上静默下载模型。DeepSeek 官方聊天 API 地址不能代替 OCR-2 服务地址。")
+            Text("The current dedicated model is DeepSeek-OCR-2. At about 6.79 GB, the official inference stack targets CUDA, so this app connects to a vLLM/SGLang or compatible service rather than downloading the model silently on your Mac. The DeepSeek official chat API endpoint cannot substitute for an OCR-2 service address.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("服务地址、模型名和 Key 在同一台 Mac 上覆盖升级拓时会继续保留。")
+            Text("The service URL, model name, and key persist across app updates on the same Mac.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -501,11 +501,11 @@ private struct DeepSeekOCRConfigurationRows: View {
 
     private var validationMessage: String? {
         let trimmedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedModel.isEmpty { return "请填写服务端实际使用的模型名。" }
+        if trimmedModel.isEmpty { return "Please enter the model name actually used by the server." }
         let trimmedURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedURL.isEmpty { return "请填写部署了 DeepSeek-OCR-2 的服务地址。" }
+        if trimmedURL.isEmpty { return "Please enter the URL of the service where DeepSeek-OCR-2 is deployed." }
         if URLComponents(string: trimmedURL)?.host?.lowercased() == "api.deepseek.com" {
-            return "DeepSeek 官方聊天 API 没有提供 DeepSeek-OCR-2 端点，请改用自托管或兼容服务。"
+            return "The official DeepSeek chat API doesn't provide a DeepSeek-OCR-2 endpoint; use a self-hosted or compatible service instead."
         }
         return ProviderEndpointValidator().validationMessage(for: trimmedURL)
     }
@@ -519,7 +519,7 @@ private struct DeepSeekOCRConfigurationRows: View {
             try secretStore.save(apiKey, account: DeepSeekOCRRecognitionService.keychainAccount)
             apiKey = ""
             hasStoredKey = true
-            statusMessage = "DeepSeek OCR API Key 已保存到 Keychain。"
+            statusMessage = "DeepSeek OCR API key saved to Keychain."
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -530,7 +530,7 @@ private struct DeepSeekOCRConfigurationRows: View {
             try secretStore.delete(account: DeepSeekOCRRecognitionService.keychainAccount)
             apiKey = ""
             hasStoredKey = false
-            statusMessage = "DeepSeek OCR API Key 已移除。"
+            statusMessage = "DeepSeek OCR API key removed."
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -578,7 +578,7 @@ private final class OCRPackInstallationViewModel: ObservableObject {
         } catch {
             availability = nil
             if installedInfo == nil {
-                message = "尚未发现可一键安装的发行包，也可以先使用手动导入。"
+                message = "No one-click installable package found yet; you can also use manual import."
                 isError = false
             }
         }
@@ -596,11 +596,11 @@ private final class OCRPackInstallationViewModel: ObservableObject {
                     Task { @MainActor in self?.progress = update }
                 }
                 installedInfo = info
-                message = "PaddleOCR \(info.version) 已安装，正在后台预热模型。"
+                message = "PaddleOCR \(info.version) installed; warming up the model in the background."
                 progress = nil
                 manager.prewarm(engine)
             } catch is CancellationError {
-                message = "已取消安装，原有 OCR 配置没有改变。"
+                message = "Installation canceled; your existing OCR configuration is unchanged."
                 progress = nil
             } catch {
                 message = error.localizedDescription
@@ -625,7 +625,7 @@ private final class OCRPackInstallationViewModel: ObservableObject {
         do {
             try manager.remove(engine)
             installedInfo = nil
-            message = "已卸载增强包，当前回退到 Apple Vision。"
+            message = "Enhancement pack removed; now falling back to Apple Vision."
             isError = false
         } catch {
             message = error.localizedDescription

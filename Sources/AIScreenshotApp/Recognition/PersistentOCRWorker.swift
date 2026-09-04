@@ -62,7 +62,7 @@ final class PersistentOCRWorker: @unchecked Sendable {
             (continuation: CheckedContinuation<OCRPackResponse, Error>) in
             queue.async { [weak self] in
                 guard let self else {
-                    continuation.resume(throwing: OptionalOCRPackError.executionFailed("OCR Worker 已释放"))
+                    continuation.resume(throwing: OptionalOCRPackError.executionFailed("The OCR worker has been released"))
                     return
                 }
                 do {
@@ -106,7 +106,7 @@ final class PersistentOCRWorker: @unchecked Sendable {
                 let envelope = try JSONDecoder().decode(OCRWorkerRecognitionResponse.self, from: data)
                 guard envelope.id == id else { throw OptionalOCRPackError.invalidResponse }
                 guard envelope.ok else {
-                    throw OptionalOCRPackError.executionFailed(envelope.error ?? "Worker 识别失败")
+                    throw OptionalOCRPackError.executionFailed(envelope.error ?? "Worker recognition failed")
                 }
                 guard let text = envelope.text, let confidence = envelope.confidence else {
                     throw OptionalOCRPackError.invalidResponse
@@ -159,20 +159,20 @@ final class PersistentOCRWorker: @unchecked Sendable {
 
     private func write<T: Encodable>(_ value: T) throws {
         guard let inputHandle else {
-            throw OptionalOCRPackError.executionFailed("OCR Worker 输入管道不可用")
+            throw OptionalOCRPackError.executionFailed("OCR worker input pipe is unavailable")
         }
         var data = try JSONEncoder().encode(value)
         data.append(0x0A)
         do {
             try inputHandle.write(contentsOf: data)
         } catch {
-            throw OptionalOCRPackError.executionFailed("OCR Worker 写入失败：\(error.localizedDescription)")
+            throw OptionalOCRPackError.executionFailed("OCR worker write failed: \(error.localizedDescription)")
         }
     }
 
     private func readLine(timeout: TimeInterval) throws -> Data {
         guard let outputHandle else {
-            throw OptionalOCRPackError.executionFailed("OCR Worker 输出管道不可用")
+            throw OptionalOCRPackError.executionFailed("OCR worker output pipe is unavailable")
         }
         let deadline = Date().addingTimeInterval(timeout)
         while true {
@@ -183,11 +183,11 @@ final class PersistentOCRWorker: @unchecked Sendable {
                 return Data(line)
             }
             guard let process, process.isRunning else {
-                throw OptionalOCRPackError.executionFailed("OCR Worker 已退出")
+                throw OptionalOCRPackError.executionFailed("The OCR worker has exited")
             }
             let remaining = deadline.timeIntervalSinceNow
             guard remaining > 0 else {
-                throw OptionalOCRPackError.executionFailed("OCR Worker 响应超时")
+                throw OptionalOCRPackError.executionFailed("OCR worker response timed out")
             }
             var descriptor = pollfd(
                 fd: outputHandle.fileDescriptor,
@@ -198,7 +198,7 @@ final class PersistentOCRWorker: @unchecked Sendable {
             let status = Darwin.poll(&descriptor, 1, milliseconds)
             if status < 0 {
                 if errno == EINTR { continue }
-                throw OptionalOCRPackError.executionFailed("OCR Worker 管道读取失败")
+                throw OptionalOCRPackError.executionFailed("OCR worker pipe read failed")
             }
             if status == 0 { continue }
             if descriptor.revents & Int16(POLLIN | POLLHUP) != 0 {
@@ -206,11 +206,11 @@ final class PersistentOCRWorker: @unchecked Sendable {
                 let count = Darwin.read(outputHandle.fileDescriptor, &bytes, bytes.count)
                 guard count > 0 else {
                     if count < 0, errno == EINTR { continue }
-                    throw OptionalOCRPackError.executionFailed("OCR Worker 输出已关闭")
+                    throw OptionalOCRPackError.executionFailed("OCR worker output has been closed")
                 }
                 outputBuffer.append(contentsOf: bytes.prefix(count))
             } else if descriptor.revents & Int16(POLLERR) != 0 {
-                throw OptionalOCRPackError.executionFailed("OCR Worker 输出管道异常")
+                throw OptionalOCRPackError.executionFailed("OCR worker output pipe error")
             }
         }
     }

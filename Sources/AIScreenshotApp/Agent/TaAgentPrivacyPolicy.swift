@@ -64,16 +64,16 @@ struct TaAgentPrivacyPolicy: Equatable, Sendable {
         guard isEnabled else {
             return AgentErrorPayload(
                 code: .targetBlockedByPrivacyPolicy,
-                message: "拓的 Agent 调用已关闭。",
-                hint: "打开拓 → 设置 → Agent 与自动化后启用。",
+                message: "Ta's Agent calls are disabled.",
+                hint: "Open Ta → Settings → Agent & Automation to enable it.",
                 retryable: false
             )
         }
         guard automaticCaptureAllowed else {
             return AgentErrorPayload(
                 code: .targetBlockedByPrivacyPolicy,
-                message: "Agent 自动截图已关闭。",
-                hint: "可在拓的 Agent 与自动化设置中启用。",
+                message: "Agent automatic screenshots are disabled.",
+                hint: "You can enable it in Ta's Agent & Automation settings.",
                 retryable: false
             )
         }
@@ -87,8 +87,8 @@ struct TaAgentPrivacyPolicy: Equatable, Sendable {
             || (!allowCaptureTa && containsTa) {
             return AgentErrorPayload(
                 code: .targetBlockedByPrivacyPolicy,
-                message: "目标 App 已被 Agent 截图隐私策略阻止。",
-                hint: "如确有需要，请在拓的隐私 App 黑名单中调整。",
+                message: "The target app is blocked by the Agent screenshot privacy policy.",
+                hint: "If needed, adjust it in Ta's Privacy app blocklist.",
                 retryable: false
             )
         }
@@ -107,8 +107,8 @@ struct TaAgentPrivacyPolicy: Equatable, Sendable {
         guard effective != .deny else {
             return AgentErrorPayload(
                 code: .cloudUploadNotAllowed,
-                message: "当前请求禁止把图片或文字发送到云端模型。",
-                hint: "改用本地能力，或在明确获得用户许可后设置 cloud=allow。",
+                message: "This request is not allowed to send images or text to a cloud model.",
+                hint: "Use a local capability instead, or set cloud=allow after explicit user consent.",
                 retryable: false
             )
         }

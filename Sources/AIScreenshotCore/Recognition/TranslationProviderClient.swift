@@ -14,17 +14,17 @@ public enum TranslationProviderError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidEndpoint(let message): message
-        case .missingModel: "尚未配置翻译模型。"
-        case .missingAPIKey: "尚未配置翻译 API Key。"
-        case .emptyInput: "截图中没有可翻译的文字。"
-        case .invalidResponse: "翻译服务返回了无法解析的响应。"
-        case .emptyResponse: "翻译模型没有返回内容。"
-        case .invalidSegmentResponse: "翻译模型没有返回完整的分段结果，请重试。"
+        case .missingModel: "No translation model configured yet."
+        case .missingAPIKey: "No translation API key configured yet."
+        case .emptyInput: "There is no translatable text in the screenshot."
+        case .invalidResponse: "The translation service returned an unparsable response."
+        case .emptyResponse: "The translation model returned no content."
+        case .invalidSegmentResponse: "The translation model did not return a complete segmented result. Please try again."
         case .reasoningOnlyOutput(let truncated):
             truncated
-                ? "模型把输出上限耗在思考过程里，还没生成正文就被截断了。请关闭该模型的深度思考，或调大输出上限后重试。"
-                : "模型只返回了思考过程，没有正文内容。请为该配置关闭深度思考后重试。"
-        case .server(let statusCode, let message): "翻译服务错误（\(statusCode)）：\(message)"
+                ? "The model spent its entire output budget on its reasoning process and was truncated before producing any text. Please turn off deep thinking for this model, or raise the output limit and try again."
+                : "The model only returned its reasoning process, with no body text. Please turn off deep thinking for this configuration and try again."
+        case .server(let statusCode, let message): "Translation service error (\(statusCode)): \(message)"
         }
     }
 }
@@ -275,13 +275,13 @@ public struct TranslationProviderClient: @unchecked Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "，,"))
         guard !trimmed.isEmpty else {
-            throw TranslationProviderError.invalidEndpoint("请先配置翻译 API 地址。")
+            throw TranslationProviderError.invalidEndpoint("Please configure the translation API address first.")
         }
         if let validation = ProviderEndpointValidator().validationMessage(for: trimmed) {
             throw TranslationProviderError.invalidEndpoint(validation)
         }
         guard var components = URLComponents(string: trimmed), components.url != nil else {
-            throw TranslationProviderError.invalidEndpoint("翻译 API 地址格式无效。")
+            throw TranslationProviderError.invalidEndpoint("Invalid translation API address format.")
         }
         let path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         switch provider {
@@ -303,7 +303,7 @@ public struct TranslationProviderClient: @unchecked Sendable {
             }
         }
         guard let url = components.url else {
-            throw TranslationProviderError.invalidEndpoint("翻译 API 地址格式无效。")
+            throw TranslationProviderError.invalidEndpoint("Invalid translation API address format.")
         }
         return url
     }

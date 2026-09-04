@@ -45,10 +45,10 @@ public enum OCREnginePreference: String, CaseIterable, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .appleVision: "Apple Vision（内置）"
-        case .rapidOCR: "RapidOCR 增强包"
-        case .paddleOCR: "PaddleOCR 增强包"
-        case .deepSeekOCR2: "DeepSeek-OCR-2（最新）"
+        case .appleVision: "Apple Vision (Built-in)"
+        case .rapidOCR: "RapidOCR Enhancement Pack"
+        case .paddleOCR: "PaddleOCR Enhancement Pack"
+        case .deepSeekOCR2: "DeepSeek-OCR-2 (Latest)"
         }
     }
 

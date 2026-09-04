@@ -22,7 +22,7 @@ struct MenuBarContentView: View {
                             .foregroundStyle(TaPalette.mutedInk)
                     }
                     Spacer()
-                    Text("本地优先")
+                    Text("Local First")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(TaPalette.mutedInk)
                         .padding(.horizontal, 8)
@@ -36,8 +36,8 @@ struct MenuBarContentView: View {
 
                 VStack(spacing: 5) {
                     MenuActionButton(
-                        title: "开始拓取",
-                        subtitle: "截图后选择取字、复制、钉图或编辑",
+                        title: "Start Capture",
+                        subtitle: "After capturing, extract text, copy, pin, or edit",
                         shortcut: shortcutText(for: .interactiveCapture),
                         symbol: "viewfinder",
                         emphasized: true
@@ -46,8 +46,8 @@ struct MenuBarContentView: View {
                     }
 
                     MenuActionButton(
-                        title: "极速识别内容",
-                        subtitle: "按设置选择 OCR 或多模态",
+                        title: "Quick Recognition",
+                        subtitle: "Uses OCR or multimodal based on settings",
                         shortcut: shortcutText(for: .intelligentCapture),
                         symbol: "text.viewfinder"
                     ) {
@@ -55,8 +55,8 @@ struct MenuBarContentView: View {
                     }
 
                     MenuActionButton(
-                        title: "截图翻译",
-                        subtitle: "识别、翻译并复制文字",
+                        title: "Screenshot Translation",
+                        subtitle: "Recognize, translate, and copy text",
                         shortcut: shortcutText(for: .translationCapture),
                         symbol: "character.book.closed"
                     ) {
@@ -64,8 +64,8 @@ struct MenuBarContentView: View {
                     }
 
                     MenuActionButton(
-                        title: "截图图片",
-                        subtitle: "始终复制原图",
+                        title: "Capture Image",
+                        subtitle: "Always copies the original image",
                         shortcut: shortcutText(for: .imageCapture),
                         symbol: "rectangle.dashed"
                     ) {
@@ -73,8 +73,8 @@ struct MenuBarContentView: View {
                     }
 
                     MenuActionButton(
-                        title: "截图并钉住",
-                        subtitle: "保持在其他窗口上方",
+                        title: "Capture and Pin",
+                        subtitle: "Stays on top of other windows",
                         shortcut: shortcutText(for: .pinCapture),
                         symbol: "pin.fill"
                     ) {
@@ -82,8 +82,8 @@ struct MenuBarContentView: View {
                     }
 
                     MenuActionButton(
-                        title: "长截图",
-                        subtitle: "适用于浏览器、微信和 AI 对话",
+                        title: "Long Screenshot",
+                        subtitle: "For browsers, WeChat, and AI conversations",
                         shortcut: shortcutText(for: .longCapture),
                         symbol: "rectangle.and.arrow.up.right.and.arrow.down.left"
                     ) {
@@ -95,18 +95,18 @@ struct MenuBarContentView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("钉图管理")
+                    Text("Pin Management")
                         .font(.caption.bold())
                         .foregroundStyle(TaPalette.mutedInk)
                     HStack(spacing: 10) {
-                        Button("钉剪贴板") { appModel.pinClipboardContent() }
-                        Button("隐藏全部") { appModel.hideAllPins() }
-                        Button("显示全部") { appModel.showAllPins() }
+                        Button("Pin Clipboard") { appModel.pinClipboardContent() }
+                        Button("Hide All") { appModel.hideAllPins() }
+                        Button("Show All") { appModel.showAllPins() }
                     }
                     .buttonStyle(.link)
                     HStack(spacing: 10) {
-                        Button("恢复穿透") { appModel.restorePinInteraction() }
-                        Button("恢复关闭") { appModel.restoreLastClosedPin() }
+                        Button("Restore Click-Through") { appModel.restorePinInteraction() }
+                        Button("Restore Last Closed") { appModel.restoreLastClosedPin() }
                     }
                     .buttonStyle(.link)
                 }
@@ -119,7 +119,7 @@ struct MenuBarContentView: View {
                     Button {
                         appModel.showWelcome()
                     } label: {
-                        Label("打开主界面", systemImage: "macwindow")
+                        Label("Open Main Window", systemImage: "macwindow")
                     }
                     .buttonStyle(.plain)
 
@@ -129,7 +129,7 @@ struct MenuBarContentView: View {
                     Button {
                         appModel.showSettings()
                     } label: {
-                        Label("设置", systemImage: "gearshape")
+                        Label("Settings", systemImage: "gearshape")
                     }
                     .buttonStyle(.plain)
 
@@ -139,7 +139,7 @@ struct MenuBarContentView: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
 
-                    Button("退出") {
+                    Button("Quit") {
                         NSApplication.shared.terminate(nil)
                     }
                     .buttonStyle(.plain)

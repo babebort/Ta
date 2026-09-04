@@ -10,11 +10,11 @@ public enum TaBridgeClientError: Error, Equatable, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .socketPathTooLong(let path):
-            "Unix Socket 路径过长：\(path)"
+            "Unix socket path too long: \(path)"
         case .socketFailure(let operation, let code):
-            "Bridge \(operation) 失败（errno \(code)：\(String(cString: strerror(code)))）"
+            "Bridge \(operation) failed (errno \(code): \(String(cString: strerror(code))))"
         case .connectionClosed:
-            "Bridge 在返回完整响应前关闭了连接。"
+            "Bridge closed the connection before returning a full response."
         }
     }
 }

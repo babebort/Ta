@@ -38,7 +38,7 @@ struct CLIRunner: Sendable {
                     requestID: invocation.requestID,
                     error: AgentErrorPayload(
                         code: .invalidRequest,
-                        message: "OCR 没有返回可翻译文字。",
+                        message: "OCR did not return any translatable text.",
                         retryable: false
                     )
                 )
@@ -170,11 +170,11 @@ private enum CLIRecipeError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingPath:
-            "transform 缺少本地 recipePath。"
+            "transform is missing a local recipePath."
         case .unreadable(let path, let underlying):
-            "无法读取标注配方 \(path)：\(underlying)"
+            "Could not read annotation recipe \(path): \(underlying)"
         case .invalidUTF8(let path):
-            "标注配方必须是非空 UTF-8 JSON：\(path)"
+            "Annotation recipe must be non-empty UTF-8 JSON: \(path)"
         }
     }
 }

@@ -105,13 +105,13 @@ final class CaptureCoordinator {
     func openResultBarSmokeFixture(kind: ResultBarKind) {
         let state = switch kind {
         case .processing:
-            ResultBarState(kind: .processing, title: "正在识别图片…", detail: "本地处理，不会上传")
+            ResultBarState(kind: .processing, title: "Recognizing image…", detail: "Processed locally, nothing is uploaded")
         case .success:
-            ResultBarState(kind: .success, title: "已复制图片", detail: "910 × 358")
+            ResultBarState(kind: .success, title: "Image copied", detail: "910 × 358")
         case .warning:
-            ResultBarState(kind: .warning, title: "已复制，部分文字可能有误", detail: "请检查识别结果")
+            ResultBarState(kind: .warning, title: "Copied, some text may be inaccurate", detail: "Please check the recognized result")
         case .failure:
-            ResultBarState(kind: .failure, title: "复制失败", detail: "剪贴板被其他应用占用")
+            ResultBarState(kind: .failure, title: "Copy failed", detail: "Clipboard is in use by another app")
         }
         resultBar.show(state, autoHide: false, dismissalOverrideSeconds: 60)
     }
@@ -126,10 +126,10 @@ final class CaptureCoordinator {
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: representation)
         NSColor.white.setFill()
         NSRect(x: 0, y: 0, width: 1000, height: 620).fill()
-        "Ta · 标注案例".draw(at: CGPoint(x: 60, y: 470), withAttributes: [
+        "Ta · Annotation Sample".draw(at: CGPoint(x: 60, y: 470), withAttributes: [
             .font: NSFont.systemFont(ofSize: 46, weight: .bold), .foregroundColor: NSColor.black
         ])
-        "箭头 · 文字 · 高亮 · 马赛克 · 自由缩放".draw(at: CGPoint(x: 60, y: 390), withAttributes: [
+        "Arrow · Text · Highlight · Mosaic · Free Resize".draw(at: CGPoint(x: 60, y: 390), withAttributes: [
             .font: NSFont.systemFont(ofSize: 28), .foregroundColor: NSColor.darkGray
         ])
         NSColor.systemBlue.withAlphaComponent(0.16).setFill()
@@ -155,7 +155,7 @@ final class CaptureCoordinator {
         let initialChangeCount = clipboardService.changeCount
         let configuredAction = action(for: mode)
         guard let overlayContext = selectionOverlay.prepareStartContext() else {
-            completion(.failed("找不到显示器"))
+            completion(.failed("Could not find the display"))
             return
         }
 
@@ -206,10 +206,10 @@ final class CaptureCoordinator {
                 NSCursor.arrow.set()
                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                 resultBar.show(
-                    ResultBarState(kind: .failure, title: "截图准备失败", detail: message),
+                    ResultBarState(kind: .failure, title: "Failed to prepare the screenshot", detail: message),
                     autoHide: false
                 )
-                completion(.failed("截图准备失败"))
+                completion(.failed("Failed to prepare the screenshot"))
             }
         }
     }
@@ -224,7 +224,7 @@ final class CaptureCoordinator {
 
         guard let screen = NSScreen.main ?? NSScreen.screens.first,
               let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
-            completion(.failed("找不到显示器"))
+            completion(.failed("Could not find the display"))
             return
         }
 
@@ -284,10 +284,10 @@ final class CaptureCoordinator {
                 )
                 if committed {
                     resultBar.show(
-                        ResultBarState(kind: .success, title: "已复制图片", detail: "\(image.width) × \(image.height)"),
+                        ResultBarState(kind: .success, title: "Image copied", detail: "\(image.width) × \(image.height)"),
                         autoHide: true
                     )
-                    completion(.completed("已复制图片"))
+                    completion(.completed("Image copied"))
                 } else {
                     showClipboardChanged(completion: completion)
                 }
@@ -299,12 +299,12 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .success,
-                        title: "已钉在屏幕上",
-                        detail: "拖动移动 · 滚轮缩放 · ⌘滚轮调透明度 · 双击关闭"
+                        title: "Pinned to screen",
+                        detail: "Drag to move · scroll to zoom · ⌘+scroll to adjust opacity · double-click to close"
                     ),
                     autoHide: true
                 )
-                completion(.completed("已钉图"))
+                completion(.completed("Pinned"))
                 return
             }
 
@@ -312,8 +312,8 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .processing,
-                        title: "正在调用多模态模型…",
-                        detail: "仅上传本次主动框选的图片"
+                        title: "Calling the multimodal model…",
+                        detail: "Only the image from this selection is uploaded"
                     ),
                     autoHide: false
                 )
@@ -329,22 +329,22 @@ final class CaptureCoordinator {
                         resultBar.show(
                             ResultBarState(
                                 kind: .success,
-                                title: "AI 识图结果已复制",
-                                detail: "\(text.count) 个字符 · \(multimodalRecognitionService.activeVisionModelName)"
+                                title: "AI recognition result copied",
+                                detail: "\(text.count) characters · \(multimodalRecognitionService.activeVisionModelName)"
                             ),
                             autoHide: true
                         )
-                        completion(.completed("AI 识图结果已复制"))
+                        completion(.completed("AI recognition result copied"))
                     } else {
                         showClipboardChanged(completion: completion)
                     }
                 } catch {
                     let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     resultBar.show(
-                        ResultBarState(kind: .failure, title: "AI 识图失败", detail: message),
+                        ResultBarState(kind: .failure, title: "AI recognition failed", detail: message),
                         autoHide: false
                     )
-                    completion(.failed("AI 识图失败"))
+                    completion(.failed("AI recognition failed"))
                 }
                 return
             }
@@ -371,10 +371,10 @@ final class CaptureCoordinator {
                 } catch {
                     let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     resultBar.show(
-                        ResultBarState(kind: .failure, title: "截图翻译失败", detail: message),
+                        ResultBarState(kind: .failure, title: "Screenshot translation failed", detail: message),
                         autoHide: false
                     )
-                    completion(.failed("截图翻译失败"))
+                    completion(.failed("Screenshot translation failed"))
                 }
                 return
             }
@@ -385,22 +385,22 @@ final class CaptureCoordinator {
                         resultBar.show(
                             ResultBarState(
                                 kind: .success,
-                                title: "截图已保存",
+                                title: "Screenshot saved",
                                 detail: url.lastPathComponent
                             ),
                             autoHide: true
                         )
-                        completion(.completed("截图已保存"))
+                        completion(.completed("Screenshot saved"))
                     } else {
                         completion(.cancelled)
                     }
                 } catch {
                     let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     resultBar.show(
-                        ResultBarState(kind: .failure, title: "保存失败", detail: message),
+                        ResultBarState(kind: .failure, title: "Save failed", detail: message),
                         autoHide: false
                     )
-                    completion(.failed("保存失败"))
+                    completion(.failed("Save failed"))
                 }
                 return
             }
@@ -427,7 +427,7 @@ final class CaptureCoordinator {
                             } catch {
                                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                                 resultBar.show(
-                                    ResultBarState(kind: .failure, title: "保存失败", detail: message),
+                                    ResultBarState(kind: .failure, title: "Save failed", detail: message),
                                     autoHide: false
                                 )
                                 return false
@@ -444,32 +444,32 @@ final class CaptureCoordinator {
                             resultBar.show(
                                 ResultBarState(
                                     kind: .success,
-                                    title: "标注图片已复制",
-                                    detail: "可直接粘贴到微信或文档"
+                                    title: "Annotated image copied",
+                                    detail: "Can be pasted directly into WeChat or a document"
                                 ),
                                 autoHide: true
                             )
-                            completion(.completed("标注图片已复制"))
+                            completion(.completed("Annotated image copied"))
                         case .save:
                             resultBar.show(
                                 ResultBarState(
                                     kind: .success,
-                                    title: "标注图片已保存",
-                                    detail: savedFilename ?? "已保存到所选位置"
+                                    title: "Annotated image saved",
+                                    detail: savedFilename ?? "Saved to the selected location"
                                 ),
                                 autoHide: true
                             )
-                            completion(.completed("标注图片已保存"))
+                            completion(.completed("Annotated image saved"))
                         case .pin:
                             resultBar.show(
                                 ResultBarState(
                                     kind: .success,
-                                    title: "标注图片已钉住",
-                                    detail: "拖动移动 · 滚轮缩放 · 双击关闭"
+                                    title: "Annotated image pinned",
+                                    detail: "Drag to move · scroll to zoom · double-click to close"
                                 ),
                                 autoHide: true
                             )
-                            completion(.completed("标注图片已钉住"))
+                            completion(.completed("Annotated image pinned"))
                         case nil:
                             completion(.cancelled)
                         }
@@ -482,12 +482,12 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .warning,
-                        title: "美化入口已预留",
-                        detail: "将在 Snipaste 功能对标阶段接入"
+                        title: "Beautify entry reserved",
+                        detail: "Will be wired up during the Snipaste feature-parity phase"
                     ),
                     autoHide: true
                 )
-                completion(.completed("美化入口已预留"))
+                completion(.completed("Beautify entry reserved"))
                 return
             }
 
@@ -497,8 +497,8 @@ final class CaptureCoordinator {
             resultBar.show(
                 ResultBarState(
                     kind: .processing,
-                    title: selectedOCR == .deepSeekOCR2 ? "正在使用 DeepSeek-OCR-2 识别…" : "正在本地识别文字…",
-                    detail: selectedOCR == .deepSeekOCR2 ? "截图将发送到你配置的 OCR 服务" : "图片不会上传"
+                    title: selectedOCR == .deepSeekOCR2 ? "Recognizing with DeepSeek-OCR-2…" : "Recognizing text locally…",
+                    detail: selectedOCR == .deepSeekOCR2 ? "The screenshot will be sent to your configured OCR service" : "The image will not be uploaded"
                 ),
                 autoHide: false
             )
@@ -526,8 +526,8 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .processing,
-                        title: "正在进行云端增强…",
-                        detail: "已按你的确认上传本次选区"
+                        title: "Enhancing in the cloud…",
+                        detail: "Uploaded this selection with your confirmation"
                     ),
                     autoHide: false
                 )
@@ -546,12 +546,12 @@ final class CaptureCoordinator {
                         resultBar.show(
                             ResultBarState(
                                 kind: .success,
-                                title: "AI 增强结果已复制",
-                                detail: "本地置信度 \(Int(result.confidence * 100))% · 已经你确认后上传"
+                                title: "AI-enhanced result copied",
+                                detail: "Local confidence \(Int(result.confidence * 100))% · uploaded after your confirmation"
                             ),
                             autoHide: true
                         )
-                        completion(.completed("AI 增强结果已复制"))
+                        completion(.completed("AI-enhanced result copied"))
                     } else {
                         showClipboardChanged(completion: completion)
                     }
@@ -560,7 +560,7 @@ final class CaptureCoordinator {
                     resultBar.show(
                         ResultBarState(
                             kind: .warning,
-                            title: "云端增强失败，继续使用本地结果",
+                            title: "Cloud enhancement failed, using the local result instead",
                             detail: error.localizedDescription
                         ),
                         autoHide: true
@@ -576,10 +576,10 @@ final class CaptureCoordinator {
                 )
                 if committed {
                     resultBar.show(
-                        ResultBarState(kind: .warning, title: "未发现文字，已复制图片", detail: nil),
+                        ResultBarState(kind: .warning, title: "No text found, image copied instead", detail: nil),
                         autoHide: true
                     )
-                    completion(.completed("未发现文字，已复制图片"))
+                    completion(.completed("No text found, image copied instead"))
                 } else {
                     showClipboardChanged(completion: completion)
                 }
@@ -598,32 +598,32 @@ final class CaptureCoordinator {
 
             let kind: ResultBarKind = result.isLowConfidence ? .warning : .success
             let typeLabel = switch result.contentType {
-            case .plainText: "文本"
-            case .code: "代码"
-            case .table: "表格"
-            case .qrCode: "链接"
-            case .formula: "公式"
-            case .image: "图片"
+            case .plainText: "Text"
+            case .code: "Code"
+            case .table: "Table"
+            case .qrCode: "Link"
+            case .formula: "Formula"
+            case .image: "Image"
             }
             resultBar.show(
                 ResultBarState(
                     kind: kind,
-                    title: result.isLowConfidence ? "已复制，部分文字可能有误" : "已复制\(typeLabel)",
-                detail: "\(result.text.count) 个字符 · \(result.engine.displayName)"
+                    title: result.isLowConfidence ? "Copied, some text may be inaccurate" : "Copied \(typeLabel)",
+                detail: "\(result.text.count) characters · \(result.engine.displayName)"
                 ),
                 autoHide: true
             )
-            completion(.completed("已复制\(typeLabel)"))
+            completion(.completed("Copied \(typeLabel)"))
         } catch is CancellationError {
             resultBar.hide()
             completion(.cancelled)
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             resultBar.show(
-                ResultBarState(kind: .failure, title: "截图失败", detail: message),
+                ResultBarState(kind: .failure, title: "Screenshot failed", detail: message),
                 autoHide: false
             )
-            completion(.failed("截图失败"))
+            completion(.failed("Screenshot failed"))
         }
     }
 
@@ -675,8 +675,8 @@ final class CaptureCoordinator {
         resultBar.show(
             ResultBarState(
                 kind: .processing,
-                title: "正在本机识别待翻译文字…",
-                detail: "目标语言：\(configuration.targetLanguage)"
+                title: "Recognizing text to translate on this device…",
+                detail: "Target language: \(configuration.targetLanguage)"
             ),
             autoHide: false
         )
@@ -697,8 +697,8 @@ final class CaptureCoordinator {
             resultBar.show(
                 ResultBarState(
                     kind: .processing,
-                    title: "本地识别不可用，正在切换视觉模型…",
-                    detail: "仅上传本次主动框选的图片"
+                    title: "Local recognition unavailable, switching to the vision model…",
+                    detail: "Only the image from this selection is uploaded"
                 ),
                 autoHide: false
             )
@@ -723,8 +723,8 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .processing,
-                        title: "正在使用视觉模型识别并翻译…",
-                        detail: "仅上传本次主动框选的图片"
+                        title: "Recognizing and translating with the vision model…",
+                        detail: "Only the image from this selection is uploaded"
                     ),
                     autoHide: false
                 )
@@ -734,7 +734,7 @@ final class CaptureCoordinator {
                 resultBar.show(
                     ResultBarState(
                         kind: .processing,
-                        title: "正在翻译文字…",
+                        title: "Translating text…",
                         detail: "\(configuration.sourceLanguage) → \(configuration.targetLanguage) · \(translationService.selectedTextModelName)"
                     ),
                     autoHide: false
@@ -759,8 +759,8 @@ final class CaptureCoordinator {
         resultBar.show(
             ResultBarState(
                 kind: .processing,
-                title: "正在批量翻译 \(lines.count) 个文字区域…",
-                detail: "使用 \(translationService.selectedTextModelName)，原图不会发送给文字模型"
+                title: "Batch translating \(lines.count) text regions…",
+                detail: "Using \(translationService.selectedTextModelName); the original image is not sent to the text model"
             ),
             autoHide: false
         )
@@ -778,16 +778,16 @@ final class CaptureCoordinator {
             jobIsLatest: latestJobID == jobID
         )
         annotationEditor.open(image: rendered)
-        let modeName = mode == .fullImage ? "全文翻译图片" : "双语翻译图片"
+        let modeName = mode == .fullImage ? "full-text translated image" : "bilingual translated image"
         resultBar.show(
             ResultBarState(
                 kind: .success,
-                title: "已生成\(modeName)",
-                detail: copied ? "已复制图片，并在标注器中打开预览" : "已打开预览；识别期间剪贴板有变化，未自动覆盖"
+                title: "Generated \(modeName)",
+                detail: copied ? "Image copied, preview opened in the annotator" : "Preview opened; the clipboard changed during recognition, so it was not overwritten"
             ),
             autoHide: true
         )
-        completion(.completed("已生成\(modeName)"))
+        completion(.completed("Generated \(modeName)"))
     }
 
     private func finishTextTranslation(
@@ -809,12 +809,12 @@ final class CaptureCoordinator {
         resultBar.show(
             ResultBarState(
                 kind: .success,
-                title: "翻译结果已复制",
-                detail: "\(translated.count) 个字符 · \(configuration.targetLanguage)"
+                title: "Translation result copied",
+                detail: "\(translated.count) characters · \(configuration.targetLanguage)"
             ),
             autoHide: true
         )
-        completion(.completed("翻译结果已复制"))
+        completion(.completed("Translation result copied"))
     }
 
     private func startLongCapture(completion: @escaping (CaptureOutcome) -> Void) {
@@ -834,8 +834,8 @@ final class CaptureCoordinator {
             resultBar.show(
                 ResultBarState(
                     kind: .processing,
-                    title: "长截图已开始",
-                    detail: "以选区顶部为起点，拓会自动锁定滚动区域并持续采集到底部"
+                    title: "Scrolling capture started",
+                    detail: "Starting from the top of the selection, Ta will automatically lock the scroll area and capture continuously to the bottom"
                 ),
                 autoHide: true
             )
@@ -844,19 +844,19 @@ final class CaptureCoordinator {
                 switch outcome {
                 case .cancelled:
                     resultBar.show(
-                        ResultBarState(kind: .warning, title: "已取消长截图", detail: "采集帧已从内存清除"),
+                        ResultBarState(kind: .warning, title: "Scrolling capture cancelled", detail: "Captured frames have been cleared from memory"),
                         autoHide: true
                     )
                     completion(.cancelled)
                 case .failed(let message):
                     resultBar.show(
-                        ResultBarState(kind: .failure, title: "长截图失败", detail: message),
+                        ResultBarState(kind: .failure, title: "Scrolling capture failed", detail: message),
                         autoHide: false
                     )
-                    completion(.failed("长截图失败"))
+                    completion(.failed("Scrolling capture failed"))
                 case .completed(let images, let acceptedFrames, let skippedFrames, let reviewedSeams):
                     guard let firstImage = images.first else {
-                        completion(.failed("长截图没有生成图片"))
+                        completion(.failed("Scrolling capture did not produce an image"))
                         return
                     }
                     let copied = clipboardService.copyImage(
@@ -869,21 +869,21 @@ final class CaptureCoordinator {
                             images,
                             suggestedBaseName: "AI-Long-Screenshot.png"
                         )
-                        let status = urls == nil ? "长截图已生成" : "长截图已保存"
+                        let status = urls == nil ? "Scrolling capture generated" : "Scrolling capture saved"
                         let totalHeight = images.reduce(0) { $0 + $1.height }
-                        var details = "\(firstImage.width) × \(totalHeight) · \(acceptedFrames) 个有效画面"
+                        var details = "\(firstImage.width) × \(totalHeight) · \(acceptedFrames) valid frames"
                         if skippedFrames > 0 {
-                            details += " · 跳过 \(skippedFrames) 帧"
+                            details += " · skipped \(skippedFrames) frames"
                         }
                         if reviewedSeams > 0 {
-                            details += " · \(reviewedSeams) 个低置信度接缝"
+                            details += " · \(reviewedSeams) low-confidence seams"
                         }
                         if images.count > 1 {
-                            details += " · 已分为 \(images.count) 段"
+                            details += " · split into \(images.count) segments"
                         }
                         details += copied
-                            ? (images.count > 1 ? " · 已复制第 1 段" : " · 已复制")
-                            : " · 未覆盖已变化的剪贴板"
+                            ? (images.count > 1 ? " · copied segment 1" : " · copied")
+                            : " · did not overwrite the changed clipboard"
                         resultBar.show(
                             ResultBarState(kind: .success, title: status, detail: details),
                             autoHide: true
@@ -894,12 +894,12 @@ final class CaptureCoordinator {
                         resultBar.show(
                             ResultBarState(
                                 kind: .warning,
-                                title: copied ? "长截图已复制，但保存失败" : "长截图保存失败",
+                                title: copied ? "Scrolling capture copied, but saving failed" : "Scrolling capture failed to save",
                                 detail: message
                             ),
                             autoHide: false
                         )
-                        completion(copied ? .completed("长截图已复制") : .failed("长截图保存失败"))
+                        completion(copied ? .completed("Scrolling capture copied") : .failed("Scrolling capture failed to save"))
                     }
                 }
             }
@@ -920,10 +920,10 @@ final class CaptureCoordinator {
     private func confirmCloudEnhancement(confidence: Float) -> Bool {
         let alert = NSAlert()
         alert.alertStyle = .informational
-        alert.messageText = "本地 OCR 置信度较低（\(Int(confidence * 100))%）"
-        alert.informativeText = "是否把本次主动框选的图片上传到已配置的视觉模型进行增强？不确认就不会上传。"
-        alert.addButton(withTitle: "上传并增强")
-        alert.addButton(withTitle: "使用本地结果")
+        alert.messageText = "Local OCR confidence is low (\(Int(confidence * 100))%)"
+        alert.informativeText = "Upload this selection to the configured vision model for enhancement? It won't be uploaded unless you confirm."
+        alert.addButton(withTitle: "Upload & Enhance")
+        alert.addButton(withTitle: "Use Local Result")
         return alert.runModal() == .alertFirstButtonReturn
     }
 
@@ -940,12 +940,12 @@ final class CaptureCoordinator {
         resultBar.show(
             ResultBarState(
                 kind: .warning,
-                title: "结果已就绪，但没有覆盖剪贴板",
-                detail: "识别期间你复制了其他内容"
+                title: "Result is ready, but the clipboard was not overwritten",
+                detail: "You copied something else during recognition"
             ),
             autoHide: false
         )
-        completion(.completed("剪贴板已变化，未覆盖"))
+        completion(.completed("Clipboard changed, not overwritten"))
     }
 
     private func ensureScreenCapturePermission(
@@ -960,12 +960,12 @@ final class CaptureCoordinator {
             resultBar.show(
                 ResultBarState(
                     kind: .failure,
-                    title: "需要屏幕录制权限",
-                    detail: "请在系统设置中允许「\(TaBrand.name)」后重试"
+                    title: "Screen Recording permission is required",
+                    detail: "Please allow \"\(TaBrand.name)\" in System Settings, then try again"
                 ),
                 autoHide: false
             )
-            completion(.failed("需要屏幕录制权限"))
+            completion(.failed("Screen Recording permission is required"))
             return false
         }
         return true

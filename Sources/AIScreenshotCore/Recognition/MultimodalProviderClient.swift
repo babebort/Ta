@@ -28,14 +28,14 @@ public enum MultimodalTaskTemplate: String, CaseIterable, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .general: "通用识图"
-        case .extractText: "精确取字"
-        case .translateChinese: "翻译成中文"
-        case .translateEnglish: "翻译成英文"
-        case .explainCode: "提取并解释代码"
-        case .tableMarkdown: "表格转 Markdown"
-        case .tableCSV: "表格转 CSV"
-        case .formulaLaTeX: "公式转 LaTeX"
+        case .general: "General Recognition"
+        case .extractText: "Extract Text"
+        case .translateChinese: "Translate to Chinese"
+        case .translateEnglish: "Translate to English"
+        case .explainCode: "Extract & Explain Code"
+        case .tableMarkdown: "Table to Markdown"
+        case .tableCSV: "Table to CSV"
+        case .formulaLaTeX: "Formula to LaTeX"
         }
     }
 
@@ -43,22 +43,22 @@ public enum MultimodalTaskTemplate: String, CaseIterable, Codable, Sendable {
         switch self {
         case .general:
             """
-            这是视觉理解任务，不是单纯的文字识别。请先描述图片中实际可见的主体、人物或动物、物体、场景、动作、颜色与构图；即使图片完全没有文字，也必须说明画面内容，不能只回答“没有文字”。如果图片包含文字，再准确整理文字，并保留原语言、段落、列表、代码和表格结构。直接输出结果，不要猜测看不清的内容。
+            This is a visual-understanding task, not plain text recognition. First describe the actual subjects visible in the image — people or animals, objects, scene, actions, colors, and composition; even if the image has no text at all, you must still describe the visual content and must not just answer "no text". If the image contains text, accurately transcribe it, preserving the original language, paragraphs, lists, code, and table structure. Output the result directly — do not guess at anything that is unclear.
             """
         case .extractText:
-            "逐字提取截图中的全部可见文字，保持阅读顺序、段落和换行；不要总结、翻译或补写。"
+            "Extract all visible text in the screenshot verbatim, preserving reading order, paragraphs, and line breaks; do not summarize, translate, or add anything."
         case .translateChinese:
-            "识别截图中的内容并翻译成自然、准确的中文；代码、专有名词和数字保持原意。只输出译文。"
+            "Recognize the content in the screenshot and translate it into natural, accurate Chinese; keep code, proper nouns, and numbers as-is. Output only the translation."
         case .translateEnglish:
-            "识别截图中的内容并翻译成自然、准确的英文；代码、专有名词和数字保持原意。只输出译文。"
+            "Recognize the content in the screenshot and translate it into natural, accurate English; keep code, proper nouns, and numbers as-is. Output only the translation."
         case .explainCode:
-            "提取截图中的代码，先输出可复制的完整代码块，再用简洁中文说明语言、用途和明显问题；不要虚构被遮挡的代码。"
+            "Extract the code in the screenshot, first outputting a complete, copyable code block, then briefly explain the language, purpose, and any obvious issues; do not invent code that is obscured."
         case .tableMarkdown:
-            "识别截图中的表格，严格按行列输出为 Markdown 表格。合并单元格用最接近的重复值表达，不要输出额外说明。"
+            "Recognize the table in the screenshot and output it strictly row-by-row, column-by-column as a Markdown table. Represent merged cells using the closest repeated value; do not output any extra explanation."
         case .tableCSV:
-            "识别截图中的表格并输出合法 CSV。正确转义逗号、引号和换行，只输出 CSV 内容。"
+            "Recognize the table in the screenshot and output valid CSV. Correctly escape commas, quotes, and line breaks; output only the CSV content."
         case .formulaLaTeX:
-            "识别截图中的数学公式并输出可复制的 LaTeX；多行公式使用 aligned 环境。只输出 LaTeX，不要解释或猜测模糊符号。"
+            "Recognize the mathematical formula in the screenshot and output copyable LaTeX; use the aligned environment for multi-line formulas. Output only the LaTeX — do not explain or guess at unclear symbols."
         }
     }
 }
@@ -168,12 +168,12 @@ public struct MultimodalProviderClient: @unchecked Sendable {
 
     private func endpoint(provider: VisionProviderKind, baseURL: String, model: String) throws -> URL {
         let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw VisionClientError.invalidEndpoint("请先配置 Base URL。") }
+        guard !trimmed.isEmpty else { throw VisionClientError.invalidEndpoint("Please configure the Base URL first.") }
         if let validation = ProviderEndpointValidator().validationMessage(for: trimmed) {
             throw VisionClientError.invalidEndpoint(validation)
         }
         guard var components = URLComponents(string: trimmed) else {
-            throw VisionClientError.invalidEndpoint("Base URL 格式无效。")
+            throw VisionClientError.invalidEndpoint("Invalid Base URL format.")
         }
         let path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         switch provider {
@@ -192,7 +192,7 @@ public struct MultimodalProviderClient: @unchecked Sendable {
         case .openAICompatible:
             break
         }
-        guard let url = components.url else { throw VisionClientError.invalidEndpoint("Base URL 格式无效。") }
+        guard let url = components.url else { throw VisionClientError.invalidEndpoint("Invalid Base URL format.") }
         return url
     }
 

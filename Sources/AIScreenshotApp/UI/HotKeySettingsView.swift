@@ -9,7 +9,7 @@ struct HotKeySettingsView: View {
 
     var body: some View {
         Form {
-            Section("全局截图快捷键") {
+            Section("Global Screenshot Shortcuts") {
                 ForEach(GlobalHotKeyAction.allCases, id: \.rawValue) { action in
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 3) {
@@ -32,13 +32,13 @@ struct HotKeySettingsView: View {
 
             Section {
                 HStack {
-                    Button("恢复默认快捷键") {
+                    Button("Restore Default Shortcuts") {
                         preferences.resetAll()
                         shortcuts = preferences.allShortcuts()
-                        status("已恢复默认快捷键。")
+                        status("Default shortcuts restored.")
                     }
                     Spacer()
-                    Text("点击当前快捷键后，直接按下新的单键或组合键")
+                    Text("Click the current shortcut, then press a new key or key combination")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -52,7 +52,7 @@ struct HotKeySettingsView: View {
                     .foregroundStyle(statusIsError ? .red : .green)
                 }
             } footer: {
-                Text("支持单键和组合键。单独使用字母或数字会占用它在所有应用中的正常输入，请优先选择不常用按键。Escape 取消录制；重复或被系统占用的快捷键不会覆盖当前配置。框选截图时可按右键或 Escape 退出。")
+                Text("Supports single keys and key combinations. Using a letter or number alone will block its normal input in every app, so prefer a less-common key. Press Escape to cancel recording; a duplicate or system-reserved shortcut won't overwrite the current configuration. While selecting a screenshot region, press the right mouse button or Escape to cancel.")
             }
         }
         .formStyle(.grouped)
@@ -64,7 +64,7 @@ struct HotKeySettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: HotKeyPreferences.registrationFailedNotification)) { notification in
             shortcuts = preferences.allShortcuts()
             let message = notification.userInfo?[HotKeyPreferences.errorMessageUserInfoKey] as? String
-            status(message ?? "快捷键注册失败，已恢复上一组配置。", isError: true)
+            status(message ?? "Shortcut registration failed; the previous configuration was restored.", isError: true)
         }
     }
 
@@ -72,7 +72,7 @@ struct HotKeySettingsView: View {
         do {
             try preferences.save(shortcut, for: action)
             shortcuts = preferences.allShortcuts()
-            status("“\(action.displayName)”已改为 \(shortcut.displayText)。")
+            status("\u{201c}\(action.displayName)\u{201d} changed to \(shortcut.displayText).")
         } catch {
             shortcuts = preferences.allShortcuts()
             status(error.localizedDescription, isError: true)

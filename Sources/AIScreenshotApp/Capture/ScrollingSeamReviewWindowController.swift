@@ -45,7 +45,7 @@ final class ScrollingSeamReviewWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "检查长截图接缝"
+        window.title = "Review Scrolling Capture Seams"
         window.minSize = CGSize(width: 820, height: 560)
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -132,19 +132,19 @@ private struct ScrollingSeamReviewView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("检查接缝")
+                    Text("Review Seams")
                         .font(.title2.bold())
-                    Text("红色接缝建议重点查看。负值会移除重复行，正值会补回遗漏行。")
+                    Text("Red seams are worth a closer look. Negative values remove duplicate rows, positive values restore missing rows.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("总高 \(model.outputHeight) px")
+                Text("Total height \(model.outputHeight) px")
                     .font(.system(.caption, design: .rounded))
                 Slider(value: $model.zoom, in: 0.2...1.5)
                     .frame(width: 130)
-                Button("丢弃") { model.onCancel?() }
-                Button("确认并保存") { model.onComplete?() }
+                Button("Discard") { model.onCancel?() }
+                Button("Confirm & Save") { model.onComplete?() }
                     .buttonStyle(.borderedProminent)
             }
             .padding(16)
@@ -154,9 +154,9 @@ private struct ScrollingSeamReviewView: View {
             HSplitView {
                 VStack(spacing: 10) {
                     if model.previewImages.count > 1 {
-                        Picker("预览分段", selection: $model.selectedPart) {
+                        Picker("Preview Segment", selection: $model.selectedPart) {
                             ForEach(model.previewImages.indices, id: \.self) { index in
-                                Text("第 \(index + 1) / \(model.previewImages.count) 段").tag(index)
+                                Text("Segment \(index + 1) / \(model.previewImages.count)").tag(index)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -183,11 +183,11 @@ private struct ScrollingSeamReviewView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("接缝列表")
+                        Text("Seam List")
                             .font(.headline)
                         Spacer()
                         if model.lowConfidenceCount > 0 {
-                            Text("\(model.lowConfidenceCount) 个需检查")
+                            Text("\(model.lowConfidenceCount) need review")
                                 .font(.caption)
                                 .foregroundStyle(.red)
                         }
@@ -221,14 +221,14 @@ private struct ScrollingSeamReviewView: View {
                 Circle()
                     .fill(segment.confidence < 0.58 ? Color.red : Color.green)
                     .frame(width: 8, height: 8)
-                Text("接缝 \(index + 1) · \(segment.direction == .up ? "向上" : "向下")")
+                Text("Seam \(index + 1) · \(segment.direction == .up ? "Up" : "Down")")
                     .font(.subheadline.bold())
                 Spacer()
                 Text("\(Int(segment.confidence * 100))%")
                     .font(.system(.caption, design: .monospaced))
                     .foregroundStyle(segment.confidence < 0.58 ? .red : .secondary)
             }
-            Text("新增 \(segment.newPixelHeight) px · 固定顶 \(segment.stableTopHeight) · 固定底 \(segment.stableBottomHeight)")
+            Text("New \(segment.newPixelHeight) px · Fixed top \(segment.stableTopHeight) · Fixed bottom \(segment.stableBottomHeight)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             HStack(spacing: 6) {

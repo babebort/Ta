@@ -8,9 +8,9 @@ enum ImageExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .encodingFailed:
-            "无法编码图片。"
+            "Failed to encode the image."
         case .writeFailed(let error):
-            "无法保存图片：\(error.localizedDescription)"
+            "Failed to save the image: \(error.localizedDescription)"
         }
     }
 }
@@ -22,7 +22,7 @@ struct ImageExportService {
         suggestedName: String = "AI-Screenshot-\(Self.timestamp()).png"
     ) throws -> URL? {
         let panel = NSSavePanel()
-        panel.title = "保存截图"
+        panel.title = "Save Screenshot"
         panel.nameFieldStringValue = suggestedName
         panel.allowedContentTypes = [.png, .jpeg]
         panel.canCreateDirectories = true
@@ -42,8 +42,8 @@ struct ImageExportService {
         }
 
         let panel = NSSavePanel()
-        panel.title = "保存分段长截图"
-        panel.message = "图片过长，将在所选位置保存为 (images.count) 个连续编号的 PNG 文件。"
+        panel.title = "Save Segmented Long Screenshot"
+        panel.message = "The image is too long and will be saved as (images.count) sequentially numbered PNG files at the chosen location."
         panel.nameFieldStringValue = suggestedBaseName
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true

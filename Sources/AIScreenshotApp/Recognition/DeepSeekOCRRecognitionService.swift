@@ -9,7 +9,7 @@ enum DeepSeekOCRRecognitionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .imageEncodingFailed: "无法为 DeepSeek-OCR-2 编码截图。"
+        case .imageEncodingFailed: "Failed to encode the screenshot for DeepSeek-OCR-2."
         }
     }
 }

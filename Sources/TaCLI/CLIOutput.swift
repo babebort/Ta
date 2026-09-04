@@ -40,7 +40,7 @@ enum CLIOutput {
     private static func human(_ response: AgentResponseEnvelope) -> String {
         if let error = response.error {
             var lines = ["\(error.code.rawValue): \(error.message)"]
-            if let hint = error.hint, !hint.isEmpty { lines.append("提示：\(hint)") }
+            if let hint = error.hint, !hint.isEmpty { lines.append("Hint: \(hint)") }
             return lines.joined(separator: "\n")
         }
         if case .object(let object) = response.data,
@@ -53,14 +53,14 @@ enum CLIOutput {
                 lines.append("\(key): \(display(object[key] ?? .null))")
             }
         }
-        lines.append(contentsOf: response.artifacts.map { "图片：\($0.path)（\($0.width ?? 0)×\($0.height ?? 0)）" })
-        return lines.isEmpty ? "完成" : lines.joined(separator: "\n")
+        lines.append(contentsOf: response.artifacts.map { "Image: \($0.path) (\($0.width ?? 0)×\($0.height ?? 0))" })
+        return lines.isEmpty ? "Done" : lines.joined(separator: "\n")
     }
 
     private static func display(_ value: JSONValue) -> String {
         switch value {
         case .null: "-"
-        case .bool(let value): value ? "是" : "否"
+        case .bool(let value): value ? "Yes" : "No"
         case .integer(let value): String(value)
         case .number(let value): String(value)
         case .string(let value): value

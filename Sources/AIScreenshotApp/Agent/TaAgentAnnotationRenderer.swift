@@ -376,11 +376,11 @@ enum TaAgentAnnotationRenderError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .contextCreationFailed: "无法创建标注画布。"
-        case .imageCreationFailed: "无法生成标注图片。"
-        case .invalidCrop: "无法裁剪指定图片区域。"
-        case .invalidMagnifyRegion: "放大镜区域没有可用像素。"
-        case .filterFailed(let name): "图像滤镜执行失败：\(name)。"
+        case .contextCreationFailed: "Could not create the annotation canvas."
+        case .imageCreationFailed: "Could not generate the annotated image."
+        case .invalidCrop: "Could not crop the specified image region."
+        case .invalidMagnifyRegion: "The magnifier region has no usable pixels."
+        case .filterFailed(let name): "The image filter failed to run: \(name)."
         }
     }
 }

@@ -12,15 +12,15 @@ public enum VisionClientError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidEndpoint(let message): message
-        case .missingModel: "尚未配置视觉模型。"
-        case .missingAPIKey: "尚未配置 API Key。"
-        case .invalidResponse: "模型服务返回了无法解析的响应。"
-        case .emptyResponse: "模型没有返回识别内容。"
+        case .missingModel: "No vision model configured yet."
+        case .missingAPIKey: "No API key configured yet."
+        case .invalidResponse: "The model service returned an unparsable response."
+        case .emptyResponse: "The model returned no recognition content."
         case .reasoningOnlyOutput(let truncated):
             truncated
-                ? "识别失败：输出上限被思考过程耗尽，还没生成正文就被截断了。请关闭该模型的深度思考，或调大输出上限后重试。"
-                : "模型只返回了思考过程，没有识别正文。请关闭深度思考后重试。"
-        case .server(let statusCode, let message): "模型服务错误（\(statusCode)）：\(message)"
+                ? "Recognition failed: the output budget was consumed by the reasoning process and was truncated before producing any text. Please turn off deep thinking for this model, or raise the output limit and try again."
+                : "The model only returned its reasoning process, with no recognized text. Please turn off deep thinking and try again."
+        case .server(let statusCode, let message): "Model service error (\(statusCode)): \(message)"
         }
     }
 }
@@ -97,13 +97,13 @@ public struct OpenAICompatibleVisionClient: @unchecked Sendable {
     private func endpointURL(from rawValue: String) throws -> URL {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            throw VisionClientError.invalidEndpoint("请先配置 Base URL。")
+            throw VisionClientError.invalidEndpoint("Please configure the Base URL first.")
         }
         if let validation = ProviderEndpointValidator().validationMessage(for: trimmed) {
             throw VisionClientError.invalidEndpoint(validation)
         }
         guard var components = URLComponents(string: trimmed), components.url != nil else {
-            throw VisionClientError.invalidEndpoint("Base URL 格式无效。")
+            throw VisionClientError.invalidEndpoint("Invalid Base URL format.")
         }
         let path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         if path.hasSuffix("chat/completions") {
@@ -111,7 +111,7 @@ public struct OpenAICompatibleVisionClient: @unchecked Sendable {
         }
         components.path = "/" + ([path, "chat/completions"].filter { !$0.isEmpty }.joined(separator: "/"))
         guard let url = components.url else {
-            throw VisionClientError.invalidEndpoint("Base URL 格式无效。")
+            throw VisionClientError.invalidEndpoint("Invalid Base URL format.")
         }
         return url
     }

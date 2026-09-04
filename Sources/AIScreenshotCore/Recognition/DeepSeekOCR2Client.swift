@@ -6,8 +6,8 @@ public enum DeepSeekOCRPromptMode: String, CaseIterable, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .plainText: "纯文本（推荐截图取字）"
-        case .documentMarkdown: "Markdown（保留文档结构）"
+        case .plainText: "Plain Text (recommended for screenshots)"
+        case .documentMarkdown: "Markdown (preserves document structure)"
         }
     }
 
@@ -31,11 +31,11 @@ public enum DeepSeekOCR2ClientError: LocalizedError, Equatable {
         switch self {
         case .invalidEndpoint(let message): message
         case .officialAPIUnsupported:
-            "DeepSeek 官方 API 当前没有提供 DeepSeek-OCR-2 模型端点；请填写部署了该模型的 vLLM、SGLang 或兼容服务地址。"
-        case .missingModel: "尚未配置 DeepSeek OCR 模型名。"
-        case .invalidResponse: "DeepSeek OCR 服务返回了无法解析的响应。"
-        case .emptyResponse: "DeepSeek OCR 没有返回识别内容。"
-        case .server(let statusCode, let message): "DeepSeek OCR 服务错误（\(statusCode)）：\(message)"
+            "The official DeepSeek API does not currently offer a DeepSeek-OCR-2 model endpoint; please enter the address of a vLLM, SGLang, or compatible service hosting this model."
+        case .missingModel: "No DeepSeek OCR model name configured yet."
+        case .invalidResponse: "The DeepSeek OCR service returned an unparsable response."
+        case .emptyResponse: "DeepSeek OCR returned no recognition content."
+        case .server(let statusCode, let message): "DeepSeek OCR service error (\(statusCode)): \(message)"
         }
     }
 }
@@ -109,13 +109,13 @@ public struct DeepSeekOCR2Client: @unchecked Sendable {
     private func endpointURL(from rawValue: String) throws -> URL {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            throw DeepSeekOCR2ClientError.invalidEndpoint("请先配置 DeepSeek OCR 服务地址。")
+            throw DeepSeekOCR2ClientError.invalidEndpoint("Please configure the DeepSeek OCR service address first.")
         }
         if let validation = ProviderEndpointValidator().validationMessage(for: trimmed) {
             throw DeepSeekOCR2ClientError.invalidEndpoint(validation)
         }
         guard var components = URLComponents(string: trimmed), components.url != nil else {
-            throw DeepSeekOCR2ClientError.invalidEndpoint("DeepSeek OCR 服务地址格式无效。")
+            throw DeepSeekOCR2ClientError.invalidEndpoint("Invalid DeepSeek OCR service address format.")
         }
         if components.host?.lowercased() == "api.deepseek.com" {
             throw DeepSeekOCR2ClientError.officialAPIUnsupported
@@ -126,7 +126,7 @@ public struct DeepSeekOCR2Client: @unchecked Sendable {
         }
         components.path = "/" + [path, "chat/completions"].filter { !$0.isEmpty }.joined(separator: "/")
         guard let url = components.url else {
-            throw DeepSeekOCR2ClientError.invalidEndpoint("DeepSeek OCR 服务地址格式无效。")
+            throw DeepSeekOCR2ClientError.invalidEndpoint("Invalid DeepSeek OCR service address format.")
         }
         return url
     }

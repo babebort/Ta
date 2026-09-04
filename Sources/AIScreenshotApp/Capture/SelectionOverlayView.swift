@@ -3,14 +3,14 @@ import AIScreenshotCore
 
 enum CaptureActionToolbarLayout {
     static let actions: [(action: CaptureQuickAction, title: String, symbol: String)] = [
-        (.beautify, "美化", "wand.and.stars"),
-        (.multimodal, "AI 识图", "sparkles"),
-        (.localOCR, "取字", "text.viewfinder"),
-        (.translate, "翻译", "character.book.closed"),
-        (.edit, "标注", "pencil.tip.crop.circle"),
-        (.pin, "钉图", "pin.fill"),
-        (.copyImage, "复制", "doc.on.doc"),
-        (.save, "保存", "square.and.arrow.down")
+        (.beautify, "Beautify", "wand.and.stars"),
+        (.multimodal, "AI Recognize", "sparkles"),
+        (.localOCR, "Extract Text", "text.viewfinder"),
+        (.translate, "Translate", "character.book.closed"),
+        (.edit, "Annotate", "pencil.tip.crop.circle"),
+        (.pin, "Pin", "pin.fill"),
+        (.copyImage, "Copy", "doc.on.doc"),
+        (.save, "Save", "square.and.arrow.down")
     ]
 }
 
@@ -449,7 +449,7 @@ final class SelectionOverlayView: NSView {
         context.fill(bounds)
 
         guard let displayRect = selectionRect ?? hoveredSnapTarget?.frame else {
-            drawHint("拖动选择区域 · 右键 / Esc 取消", at: CGPoint(x: bounds.midX, y: bounds.midY))
+            drawHint("Drag to select an area · Right-click / Esc to cancel", at: CGPoint(x: bounds.midX, y: bounds.midY))
             return
         }
 
@@ -704,12 +704,12 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawPresetFixture(in rect: CGRect) {
-        let title = "Ta · 一次截图，多种下一步"
+        let title = "Ta · One screenshot, many next steps"
         title.draw(at: CGPoint(x: rect.minX + 42, y: rect.maxY - 82), withAttributes: [
             .font: NSFont.systemFont(ofSize: 30, weight: .bold),
             .foregroundColor: NSColor.labelColor
         ])
-        "取字 · AI 识图 · 翻译 · 钉图 · 标注 · 美化".draw(
+        "Extract Text · AI Recognize · Translate · Pin · Annotate · Beautify".draw(
             at: CGPoint(x: rect.minX + 42, y: rect.maxY - 130),
             withAttributes: [
                 .font: NSFont.systemFont(ofSize: 18, weight: .medium),

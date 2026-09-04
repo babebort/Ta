@@ -89,7 +89,7 @@ struct ResultBarView: View {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .stroke(TaPalette.cinnabar.opacity(0.82), lineWidth: 1)
                 }
-                .accessibilityLabel("拓")
+                .accessibilityLabel("Ta")
 
             if state.kind != .processing {
                 Button(action: onDismiss) {
@@ -100,7 +100,7 @@ struct ResultBarView: View {
                         .background(TaPalette.ink.opacity(0.055), in: Circle())
                 }
                 .buttonStyle(.plain)
-                .help("关闭提示")
+                .help("Dismiss")
             }
         }
         .padding(.horizontal, 14)

@@ -73,7 +73,7 @@ private struct WelcomeView: View {
                 primaryCaptureCard
 
                 VStack(alignment: .leading, spacing: 11) {
-                    TaSectionLabel(title: "快速操作")
+                    TaSectionLabel(title: "Quick Actions")
 
                     LazyVGrid(
                         columns: Array(
@@ -83,43 +83,43 @@ private struct WelcomeView: View {
                         spacing: WelcomeViewMetrics.gridSpacing
                     ) {
                         quickAction(
-                            title: "极速取字",
-                            subtitle: "识别文字并复制",
+                            title: "Instant Text",
+                            subtitle: "Recognize text and copy it",
                             shortcut: shortcutText(for: .intelligentCapture),
                             symbol: "text.viewfinder"
                         ) { appModel.startCapture(.intelligent) }
 
                         quickAction(
-                            title: "复制图片",
-                            subtitle: "保留屏幕这一刻",
+                            title: "Copy Image",
+                            subtitle: "Capture this moment on screen",
                             shortcut: shortcutText(for: .imageCapture),
                             symbol: "rectangle.dashed"
                         ) { appModel.startCapture(.image) }
 
                         quickAction(
-                            title: "截图翻译",
-                            subtitle: "识别、翻译并复制",
+                            title: "Screenshot Translate",
+                            subtitle: "Recognize, translate, and copy",
                             shortcut: shortcutText(for: .translationCapture),
                             symbol: "character.book.closed"
                         ) { appModel.startCapture(.translation) }
 
                         quickAction(
-                            title: "钉在屏幕",
-                            subtitle: "让参考内容留在眼前",
+                            title: "Pin to Screen",
+                            subtitle: "Keep reference content in view",
                             shortcut: shortcutText(for: .pinCapture),
                             symbol: "pin.fill"
                         ) { appModel.startCapture(.pin) }
 
                         quickAction(
-                            title: "滚动长图",
-                            subtitle: "自动滚动并拼接",
+                            title: "Scrolling Capture",
+                            subtitle: "Auto-scroll and stitch together",
                             shortcut: shortcutText(for: .longCapture),
                             symbol: "arrow.down.to.line.compact"
                         ) { appModel.startCapture(.long) }
 
                         quickAction(
-                            title: "钉剪贴板",
-                            subtitle: "从已有内容生成钉图",
+                            title: "Pin Clipboard",
+                            subtitle: "Turn clipboard content into a pin",
                             shortcut: "",
                             symbol: "clipboard"
                         ) { appModel.pinClipboardContent() }
@@ -165,7 +165,7 @@ private struct WelcomeView: View {
                 Circle()
                     .fill(permissionGranted ? Color.green : Color.orange)
                     .frame(width: 7, height: 7)
-                Text(permissionGranted ? "本地就绪" : "需要权限")
+                Text(permissionGranted ? "Ready Locally" : "Needs Permission")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             }
@@ -177,7 +177,7 @@ private struct WelcomeView: View {
             }
 
             Button(action: onOpenSettings) {
-                Label("设置", systemImage: "gearshape")
+                Label("Settings", systemImage: "gearshape")
                     .font(.callout.weight(.medium))
             }
             .buttonStyle(.bordered)
@@ -210,8 +210,8 @@ private struct WelcomeView: View {
                 Text(appModel.statusText)
                     .font(.callout.weight(.medium))
                 Text(permissionGranted
-                     ? "屏幕录制权限已开启 · 默认在本机识别"
-                     : "首次使用需要允许读取你主动框选的屏幕区域")
+                     ? "Screen Recording is enabled · recognition runs on-device by default"
+                     : "First use requires permission to read the screen area you select")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -219,18 +219,18 @@ private struct WelcomeView: View {
             Spacer()
 
             if permissionGranted {
-                Button("重新检测", action: refreshPermission)
+                Button("Check Again", action: refreshPermission)
                     .buttonStyle(.plain)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Button("开启权限") {
+                Button("Grant Permission") {
                     _ = ScreenCapturePermissionService.request()
                     refreshPermission()
                 }
                 .buttonStyle(.borderedProminent)
 
-                Button("系统设置") {
+                Button("System Settings") {
                     ScreenCapturePermissionService.openSystemSettings()
                 }
             }
@@ -296,10 +296,10 @@ private struct WelcomePrimaryActionButton: View {
                 .frame(width: 52, height: 52)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("开始拓取")
+                    Text("Start Capturing")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(TaPalette.paper)
-                    Text("框选屏幕，再取字、翻译、复制、钉图、标注或美化")
+                    Text("Select an area of the screen, then extract, translate, copy, pin, annotate, or beautify it")
                         .font(.callout)
                         .foregroundStyle(TaPalette.paper.opacity(0.67))
                 }
@@ -308,7 +308,7 @@ private struct WelcomePrimaryActionButton: View {
                 ShortcutBadge(text: shortcut)
 
                 HStack(spacing: 6) {
-                    Text("开始截图")
+                    Text("Take Screenshot")
                     Image(systemName: "arrow.right")
                 }
                 .font(.callout.weight(.semibold))

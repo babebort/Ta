@@ -15,7 +15,7 @@ final class SettingsWindowController {
                 backing: .buffered,
                 defer: false
             )
-            newWindow.title = "\(TaBrand.name) · 设置"
+            newWindow.title = "\(TaBrand.name) · Settings"
             newWindow.titlebarAppearsTransparent = true
             newWindow.isMovableByWindowBackground = true
             newWindow.minSize = NSSize(width: 740, height: 560)

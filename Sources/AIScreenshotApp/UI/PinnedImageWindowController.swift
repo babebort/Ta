@@ -273,8 +273,8 @@ struct PinnedImageDecorationState: Equatable {
 }
 
 enum PinnedImageDecoration {
-    static let borderTitle = "显示边框"
-    static let shadowTitle = "窗口阴影"
+    static let borderTitle = "Show Border"
+    static let shadowTitle = "Window Shadow"
     static let visibleBorderWidth: CGFloat = 1
 }
 
@@ -318,31 +318,31 @@ private final class PinnedImageView: NSView {
         layer?.borderWidth = PinnedImageDecoration.visibleBorderWidth
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "复制图片", action: #selector(copyImage), keyEquivalent: "c")
-        menu.addItem(withTitle: "裁剪…", action: #selector(beginCrop), keyEquivalent: "")
-        menu.addItem(withTitle: "重置裁剪", action: #selector(resetCrop), keyEquivalent: "")
+        menu.addItem(withTitle: "Copy Image", action: #selector(copyImage), keyEquivalent: "c")
+        menu.addItem(withTitle: "Crop…", action: #selector(beginCrop), keyEquivalent: "")
+        menu.addItem(withTitle: "Reset Crop", action: #selector(resetCrop), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "向左旋转", action: #selector(rotateLeft), keyEquivalent: "[")
-        menu.addItem(withTitle: "向右旋转", action: #selector(rotateRight), keyEquivalent: "]")
-        menu.addItem(withTitle: "水平翻转", action: #selector(mirrorHorizontally), keyEquivalent: "")
-        menu.addItem(withTitle: "垂直翻转", action: #selector(mirrorVertically), keyEquivalent: "")
+        menu.addItem(withTitle: "Rotate Left", action: #selector(rotateLeft), keyEquivalent: "[")
+        menu.addItem(withTitle: "Rotate Right", action: #selector(rotateRight), keyEquivalent: "]")
+        menu.addItem(withTitle: "Flip Horizontally", action: #selector(mirrorHorizontally), keyEquivalent: "")
+        menu.addItem(withTitle: "Flip Vertically", action: #selector(mirrorVertically), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "灰度显示", action: #selector(toggleGrayscale(_:)), keyEquivalent: "")
-        menu.addItem(withTitle: "反色显示", action: #selector(toggleInversion(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Grayscale", action: #selector(toggleGrayscale(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Invert Colors", action: #selector(toggleInversion(_:)), keyEquivalent: "")
         menu.addItem(withTitle: PinnedImageDecoration.borderTitle, action: #selector(toggleBorder(_:)), keyEquivalent: "")
         menu.items.last?.state = .on
         menu.addItem(withTitle: PinnedImageDecoration.shadowTitle, action: #selector(toggleShadow(_:)), keyEquivalent: "")
         menu.items.last?.state = .on
-        menu.addItem(withTitle: "保持最前", action: #selector(toggleTopmost(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Keep on Top", action: #selector(toggleTopmost(_:)), keyEquivalent: "")
         menu.items.last?.state = .on
-        menu.addItem(withTitle: "恢复显示", action: #selector(resetAppearance), keyEquivalent: "0")
+        menu.addItem(withTitle: "Reset Appearance", action: #selector(resetAppearance), keyEquivalent: "0")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "缩略图模式", action: #selector(toggleThumbnail(_:)), keyEquivalent: "")
-        menu.addItem(withTitle: "鼠标穿透", action: #selector(enableClickThrough), keyEquivalent: "")
-        menu.addItem(withTitle: "将可见钉图编为一组", action: #selector(groupVisiblePins), keyEquivalent: "")
-        menu.addItem(withTitle: "隐藏本组", action: #selector(hideGroup), keyEquivalent: "")
+        menu.addItem(withTitle: "Thumbnail Mode", action: #selector(toggleThumbnail(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Click Through", action: #selector(enableClickThrough), keyEquivalent: "")
+        menu.addItem(withTitle: "Group Visible Pins", action: #selector(groupVisiblePins), keyEquivalent: "")
+        menu.addItem(withTitle: "Hide This Group", action: #selector(hideGroup), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "关闭钉图", action: #selector(closePin), keyEquivalent: "w")
+        menu.addItem(withTitle: "Close Pin", action: #selector(closePin), keyEquivalent: "w")
         menu.items.forEach { $0.target = self }
         self.menu = menu
     }
@@ -512,14 +512,14 @@ private final class PinnedImageView: NSView {
     @objc private func toggleGrayscale(_ sender: NSMenuItem) {
         filteredMode = filteredMode == .grayscale ? .none : .grayscale
         sender.state = filteredMode == .grayscale ? .on : .off
-        menu?.item(withTitle: "反色显示")?.state = .off
+        menu?.item(withTitle: "Invert Colors")?.state = .off
         needsDisplay = true
     }
 
     @objc private func toggleInversion(_ sender: NSMenuItem) {
         filteredMode = filteredMode == .inverted ? .none : .inverted
         sender.state = filteredMode == .inverted ? .on : .off
-        menu?.item(withTitle: "灰度显示")?.state = .off
+        menu?.item(withTitle: "Grayscale")?.state = .off
         needsDisplay = true
     }
 
@@ -547,8 +547,8 @@ private final class PinnedImageView: NSView {
         isMirroredVertically = false
         filteredMode = .none
         decoration = PinnedImageDecorationState()
-        menu?.item(withTitle: "灰度显示")?.state = .off
-        menu?.item(withTitle: "反色显示")?.state = .off
+        menu?.item(withTitle: "Grayscale")?.state = .off
+        menu?.item(withTitle: "Invert Colors")?.state = .off
         applyDecoration()
         if wasSideways, let window {
             var frame = window.frame

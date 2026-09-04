@@ -79,12 +79,12 @@ struct OCRPackInstalledInfo: Equatable, Sendable {
 
 struct OCRPackInstallProgress: Equatable, Sendable {
     enum Stage: String, Sendable {
-        case resolving = "正在查找增强包…"
-        case downloading = "正在下载…"
-        case verifying = "正在校验…"
-        case extracting = "正在解压…"
-        case healthChecking = "正在启动检查…"
-        case installing = "正在安装…"
+        case resolving = "Looking up enhancement pack…"
+        case downloading = "Downloading…"
+        case verifying = "Verifying…"
+        case extracting = "Extracting…"
+        case healthChecking = "Running startup check…"
+        case installing = "Installing…"
     }
 
     let stage: Stage
@@ -115,20 +115,20 @@ enum OptionalOCRPackError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notInstalled: "所选 OCR 增强包尚未安装。"
-        case .invalidManifest: "增强包缺少有效的 manifest.json。"
-        case .invalidCatalog: "增强包发行清单格式无效。"
-        case .packageUnavailable: "没有找到适合这台 Mac 的 PaddleOCR 增强包。"
-        case .wrongEngine: "增强包类型与所选引擎不一致。"
-        case .unsupportedArchitecture(let architecture): "增强包不支持当前架构：\(architecture)。"
-        case .unsupportedSystem(let minimum): "增强包要求 macOS \(minimum) 或更高版本。"
-        case .insecureDownloadURL: "增强包下载地址必须使用 HTTPS，开发版也可以使用本地文件。"
-        case .unsafeArchive: "增强包压缩文件包含不安全路径，已拒绝安装。"
-        case .unsafeExecutablePath: "增强包的可执行文件路径不安全。"
-        case .checksumMismatch: "增强包校验失败，未安装。"
-        case .healthCheckFailed(let message): "增强包启动检查失败：\(message)"
-        case .executionFailed(let message): "OCR 增强包运行失败：\(message)"
-        case .invalidResponse: "OCR 增强包返回格式无效。"
+        case .notInstalled: "The selected OCR enhancement pack is not installed yet."
+        case .invalidManifest: "The enhancement pack is missing a valid manifest.json."
+        case .invalidCatalog: "The enhancement pack release catalog has an invalid format."
+        case .packageUnavailable: "No PaddleOCR enhancement pack was found for this Mac."
+        case .wrongEngine: "The enhancement pack type doesn't match the selected engine."
+        case .unsupportedArchitecture(let architecture): "The enhancement pack doesn't support the current architecture: \(architecture)."
+        case .unsupportedSystem(let minimum): "The enhancement pack requires macOS \(minimum) or later."
+        case .insecureDownloadURL: "The enhancement pack download URL must use HTTPS; development builds may also use a local file."
+        case .unsafeArchive: "The enhancement pack archive contains unsafe paths and installation was refused."
+        case .unsafeExecutablePath: "The enhancement pack's executable path is unsafe."
+        case .checksumMismatch: "The enhancement pack failed verification and was not installed."
+        case .healthCheckFailed(let message): "The enhancement pack's startup check failed: \(message)"
+        case .executionFailed(let message): "The OCR enhancement pack failed to run: \(message)"
+        case .invalidResponse: "The OCR enhancement pack returned an invalid response."
         }
     }
 }
@@ -176,8 +176,8 @@ struct OptionalOCRPackManager: @unchecked Sendable {
     func chooseAndImport(_ engine: OCREnginePreference) throws -> String? {
         guard engine != .appleVision else { return nil }
         let panel = NSOpenPanel()
-        panel.title = "导入 \(engine.displayName)"
-        panel.message = "请选择包含 manifest.json 的已解压增强包目录。导入前会校验引擎、架构、可执行路径和 SHA-256。"
+        panel.title = "Import \(engine.displayName)"
+        panel.message = "Select an extracted enhancement pack directory containing manifest.json. Engine, architecture, executable path, and SHA-256 will be verified before import."
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
@@ -540,7 +540,7 @@ struct OptionalOCRPackManager: @unchecked Sendable {
         guard let response = try? JSONDecoder().decode(OCRPackHealthResponse.self, from: data),
               response.ok,
               response.engine == manifest.engine.rawValue else {
-            throw OptionalOCRPackError.healthCheckFailed("返回格式无效")
+            throw OptionalOCRPackError.healthCheckFailed("Invalid response format")
         }
         if let reported = response.architecture, reported != Self.currentArchitecture {
             throw OptionalOCRPackError.unsupportedArchitecture(Self.currentArchitecture)
@@ -621,7 +621,7 @@ private func runProcessForOutput(
     let errorURL = captureDirectory.appendingPathComponent("stderr")
     guard fileManager.createFile(atPath: outputURL.path, contents: nil),
           fileManager.createFile(atPath: errorURL.path, contents: nil) else {
-        throw OptionalOCRPackError.executionFailed("无法创建子进程输出文件")
+        throw OptionalOCRPackError.executionFailed("Failed to create subprocess output files")
     }
     let output = try FileHandle(forWritingTo: outputURL)
     let errors = try FileHandle(forWritingTo: errorURL)
@@ -646,7 +646,7 @@ private func runProcessForOutput(
         if Date() >= deadline {
             terminateOCRProcess(process)
             throw OptionalOCRPackError.executionFailed(
-                "子进程执行超时：\(executable.lastPathComponent)"
+                "Subprocess timed out: \(executable.lastPathComponent)"
             )
         }
         Thread.sleep(forTimeInterval: 0.05)

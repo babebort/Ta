@@ -9,9 +9,9 @@ enum AIProviderProfileStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidStoredData: "已保存的 AI 模型配置无法读取。"
-        case .profileNotFound: "没有找到所选的 AI 模型配置。"
-        case .missingAPIKey: "这套模型还没有保存 API Key。"
+        case .invalidStoredData: "The saved AI model configuration could not be read."
+        case .profileNotFound: "The selected AI model configuration could not be found."
+        case .missingAPIKey: "No API Key has been saved for this model yet."
         case .translationIneligible(let reason): reason
         }
     }
@@ -99,7 +99,7 @@ struct AIProviderProfileStore {
             }
             guard translationEligibility(of: profile) == nil else {
                 throw AIProviderProfileStoreError.translationIneligible(
-                    translationEligibility(of: profile) ?? "这套配置不能用于截图翻译。"
+                    translationEligibility(of: profile) ?? "This configuration cannot be used for screenshot translation."
                 )
             }
         }
@@ -129,7 +129,7 @@ struct AIProviderProfileStore {
 
     func translationEligibility(of profile: AIProviderProfile) -> String? {
         if let message = profile.validationMessage(requiresTextModel: true) { return message }
-        if !hasAPIKey(for: profile.id) { return "请先为这套配置保存 API Key。" }
+        if !hasAPIKey(for: profile.id) { return "Please save an API Key for this configuration first." }
         return nil
     }
 
@@ -163,7 +163,7 @@ struct AIProviderProfileStore {
 
         if !legacyBaseURL.isEmpty || !legacyVisionModel.isEmpty || legacyAIKey != nil {
             let profile = AIProviderProfile(
-                name: "原有 AI 模型",
+                name: "Legacy AI Model",
                 providerKind: legacyProvider,
                 baseURL: legacyBaseURL,
                 visionModel: legacyVisionModel,
@@ -193,7 +193,7 @@ struct AIProviderProfileStore {
                 }
             } else {
                 let profile = AIProviderProfile(
-                    name: "原有翻译模型",
+                    name: "Legacy Translation Model",
                     providerKind: .openAICompatible,
                     baseURL: translation.baseURL,
                     visionModel: translation.visionModel,

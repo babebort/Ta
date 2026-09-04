@@ -38,23 +38,23 @@ enum GlobalHotKeyAction: String, CaseIterable, Codable, Hashable, Sendable {
 
     var displayName: String {
         switch self {
-        case .intelligentCapture: "极速识别内容"
-        case .interactiveCapture: "通用截图"
-        case .imageCapture: "截图图片"
-        case .pinCapture: "截图并钉住"
-        case .longCapture: "滚动长截图"
-        case .translationCapture: "截图翻译"
+        case .intelligentCapture: "Instant Recognition"
+        case .interactiveCapture: "General Screenshot"
+        case .imageCapture: "Screenshot as Image"
+        case .pinCapture: "Screenshot and Pin"
+        case .longCapture: "Scrolling Long Screenshot"
+        case .translationCapture: "Screenshot Translation"
         }
     }
 
     var detail: String {
         switch self {
-        case .intelligentCapture: "按识别设置直接获取内容"
-        case .interactiveCapture: "框选后再选择取字、翻译、复制或编辑"
-        case .imageCapture: "框选后直接复制图片"
-        case .pinCapture: "框选后直接钉在屏幕上"
-        case .longCapture: "进入滚动长截图模式"
-        case .translationCapture: "识别、翻译并复制文字"
+        case .intelligentCapture: "Get content directly using recognition settings"
+        case .interactiveCapture: "Select an area, then choose text, translate, copy, or edit"
+        case .imageCapture: "Select an area and copy the image directly"
+        case .pinCapture: "Select an area and pin it to the screen directly"
+        case .longCapture: "Enter scrolling long-screenshot mode"
+        case .translationCapture: "Recognize, translate, and copy text"
         }
     }
 
@@ -83,7 +83,7 @@ enum HotKeyPreferencesError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .duplicate(let action):
-            "这个组合已用于“\(action.displayName)”，请换一个快捷键。"
+            "This combination is already used for “\(action.displayName)” — please choose a different shortcut."
         }
     }
 }

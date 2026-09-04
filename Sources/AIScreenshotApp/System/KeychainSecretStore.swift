@@ -7,7 +7,7 @@ enum KeychainSecretStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unexpectedStatus(let status):
-            return SecCopyErrorMessageString(status, nil) as String? ?? "Keychain 错误（\(status)）"
+            return SecCopyErrorMessageString(status, nil) as String? ?? "Keychain error (\(status))"
         }
     }
 }

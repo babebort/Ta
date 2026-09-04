@@ -13,10 +13,10 @@ public struct AnnotationRecipe: Codable, Equatable, Sendable {
         existingElementIDs: Set<String> = []
     ) throws -> ValidatedAnnotationRecipe {
         guard version == 1 else {
-            throw AnnotationRecipeValidationError("不支持标注配方版本：\(version)。")
+            throw AnnotationRecipeValidationError("Unsupported annotation recipe version: \(version).")
         }
         guard !operations.isEmpty else {
-            throw AnnotationRecipeValidationError("标注配方至少需要一个 operation。")
+            throw AnnotationRecipeValidationError("The annotation recipe requires at least one operation.")
         }
 
         var elementIDs = existingElementIDs
@@ -25,7 +25,7 @@ public struct AnnotationRecipe: Codable, Equatable, Sendable {
             try operation.validate()
             if case .crop = operation {
                 guard index == 0, !sawCrop else {
-                    throw AnnotationRecipeValidationError("crop 最多出现一次且必须是第一个 operation。")
+                    throw AnnotationRecipeValidationError("crop may appear at most once and must be the first operation.")
                 }
                 sawCrop = true
                 continue
@@ -33,14 +33,14 @@ public struct AnnotationRecipe: Codable, Equatable, Sendable {
             if case .eraser(let eraser) = operation {
                 for targetID in eraser.targetIDs {
                     guard elementIDs.remove(targetID) != nil else {
-                        throw AnnotationRecipeValidationError("eraser 找不到标注 ID：\(targetID)。")
+                        throw AnnotationRecipeValidationError("eraser could not find annotation ID: \(targetID).")
                     }
                 }
                 continue
             }
             guard let id = operation.elementID else { continue }
             guard elementIDs.insert(id).inserted else {
-                throw AnnotationRecipeValidationError("标注 ID 重复：\(id)。")
+                throw AnnotationRecipeValidationError("Duplicate annotation ID: \(id).")
             }
         }
         return ValidatedAnnotationRecipe(
@@ -112,11 +112,11 @@ public struct AnnotationColor: Equatable, Sendable {
 
     public init(hex: String) throws {
         guard hex.hasPrefix("#"), hex.count == 7 || hex.count == 9 else {
-            throw AnnotationRecipeValidationError("颜色必须使用 #RRGGBB 或 #RRGGBBAA：\(hex)。")
+            throw AnnotationRecipeValidationError("Color must use #RRGGBB or #RRGGBBAA: \(hex).")
         }
         let digits = String(hex.dropFirst())
         guard let value = UInt64(digits, radix: 16) else {
-            throw AnnotationRecipeValidationError("颜色包含无效十六进制字符：\(hex)。")
+            throw AnnotationRecipeValidationError("Color contains invalid hexadecimal characters: \(hex).")
         }
         if digits.count == 6 {
             red = Double((value >> 16) & 0xFF) / 255
@@ -456,17 +456,17 @@ public enum AnnotationOperation: Equatable, Sendable {
     fileprivate func validate() throws {
         func requireID(_ id: String) throws {
             guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw AnnotationRecipeValidationError("标注 id 不能为空。")
+                throw AnnotationRecipeValidationError("Annotation id cannot be empty.")
             }
         }
         func requireRect(_ rect: AnnotationRect, name: String) throws {
             guard rect.isValid else {
-                throw AnnotationRecipeValidationError("\(name) 需要有限且大于 0 的宽高。")
+                throw AnnotationRecipeValidationError("\(name) requires a finite width and height greater than 0.")
             }
         }
         func requireWidth(_ width: Double, name: String) throws {
             guard width.isFinite, width > 0 else {
-                throw AnnotationRecipeValidationError("\(name) 必须是大于 0 的有限数字。")
+                throw AnnotationRecipeValidationError("\(name) must be a finite number greater than 0.")
             }
         }
         switch self {
@@ -479,25 +479,25 @@ public enum AnnotationOperation: Equatable, Sendable {
         case .arrow(let value):
             try requireID(value.id)
             guard value.start.isFinite, value.end.isFinite, value.start != value.end else {
-                throw AnnotationRecipeValidationError("arrow 需要两个不同的有限坐标。")
+                throw AnnotationRecipeValidationError("arrow requires two distinct, finite coordinates.")
             }
             try requireWidth(value.lineWidth, name: "lineWidth")
         case .pen(let value), .highlighter(let value):
             try requireID(value.id)
             guard !value.points.isEmpty, value.points.allSatisfy(\.isFinite) else {
-                throw AnnotationRecipeValidationError("画笔路径至少需要一个有限坐标。")
+                throw AnnotationRecipeValidationError("A pen path requires at least one finite coordinate.")
             }
             try requireWidth(value.lineWidth, name: "lineWidth")
         case .text(let value):
             try requireID(value.id)
             guard value.origin.isFinite, !value.text.isEmpty else {
-                throw AnnotationRecipeValidationError("text 需要有限坐标和非空文字。")
+                throw AnnotationRecipeValidationError("text requires a finite coordinate and non-empty text.")
             }
             try requireWidth(value.fontSize, name: "fontSize")
         case .number(let value):
             try requireID(value.id)
             guard value.center.isFinite else {
-                throw AnnotationRecipeValidationError("number.center 必须是有限坐标。")
+                throw AnnotationRecipeValidationError("number.center must be a finite coordinate.")
             }
             try requireWidth(value.diameter, name: "diameter")
         case .mosaic(let value):
@@ -506,13 +506,13 @@ public enum AnnotationOperation: Equatable, Sendable {
             switch value.mode {
             case .rect:
                 guard let rect = value.rect, value.points == nil else {
-                    throw AnnotationRecipeValidationError("矩形马赛克只接受 rect。")
+                    throw AnnotationRecipeValidationError("Rectangular mosaic only accepts rect.")
                 }
                 try requireRect(rect, name: "mosaic.rect")
             case .brush:
                 guard let points = value.points, !points.isEmpty, value.rect == nil,
                       points.allSatisfy(\.isFinite) else {
-                    throw AnnotationRecipeValidationError("笔刷马赛克只接受非空 points。")
+                    throw AnnotationRecipeValidationError("Brush mosaic only accepts non-empty points.")
                 }
                 try requireWidth(value.lineWidth, name: "mosaic.lineWidth")
             }
@@ -524,13 +524,13 @@ public enum AnnotationOperation: Equatable, Sendable {
             try requireID(value.id)
             try requireRect(value.rect, name: "magnify.rect")
             guard value.factor.isFinite, value.factor > 1 else {
-                throw AnnotationRecipeValidationError("magnify.factor 必须大于 1。")
+                throw AnnotationRecipeValidationError("magnify.factor must be greater than 1.")
             }
         case .eraser(let value):
             guard !value.targetIDs.isEmpty,
                   value.targetIDs.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
                   Set(value.targetIDs).count == value.targetIDs.count else {
-                throw AnnotationRecipeValidationError("eraser.targetIds 必须是非空且不重复的 ID 数组。")
+                throw AnnotationRecipeValidationError("eraser.targetIds must be a non-empty array of unique IDs.")
             }
         }
     }

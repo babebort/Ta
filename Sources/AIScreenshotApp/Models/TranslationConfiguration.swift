@@ -5,8 +5,8 @@ struct TranslationConfiguration: Equatable, Sendable {
     static let defaultBaseURL = "https://api.deepseek.com/chat/completions"
     static let defaultTextModel = "deepseek-v4-flash"
     static let defaultVisionModel = "deepseek-v4-flash-vision-exp"
-    static let defaultSourceLanguage = "自动检测"
-    static let defaultTargetLanguage = "简体中文"
+    static let defaultSourceLanguage = "Auto-detect"
+    static let defaultTargetLanguage = "Simplified Chinese"
 
     var baseURL: String
     var textModel: String
@@ -34,7 +34,7 @@ struct TranslationConfiguration: Equatable, Sendable {
 
     var validationMessage: String? {
         if targetLanguage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请填写目标语言。"
+            return "Please enter a target language."
         }
         return nil
     }

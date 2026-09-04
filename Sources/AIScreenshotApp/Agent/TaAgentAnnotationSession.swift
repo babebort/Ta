@@ -126,13 +126,13 @@ enum TaAgentAnnotationSessionError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .cropMustPrecedeAnnotations:
-            "crop 只能用于尚未添加标注、尚未裁剪的编辑会话。"
+            "crop can only be used on an editing session that has no annotations and has not been cropped yet."
         case .cropOutOfBounds:
-            "crop.rect 超出源图片边界。"
+            "crop.rect is outside the bounds of the source image."
         case .nothingToUndo:
-            "没有可撤销的标注操作。"
+            "There is no annotation action to undo."
         case .nothingToRedo:
-            "没有可重做的标注操作。"
+            "There is no annotation action to redo."
         }
     }
 }

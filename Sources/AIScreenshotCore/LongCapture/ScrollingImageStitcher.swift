@@ -10,13 +10,13 @@ public enum ScrollingImageStitcherError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noFrames:
-            "没有采集到可用画面。"
+            "No usable frames were captured."
         case .invalidImage:
-            "滚动截图画面无效。"
+            "The scrolling screenshot frame is invalid."
         case .outputTooLarge:
-            "长截图尺寸过大，请提前结束并分段保存。"
+            "The long screenshot is too large. Please finish early and save it in sections."
         case .couldNotCreateCanvas:
-            "无法创建长截图画布。"
+            "Could not create the long-screenshot canvas."
         }
     }
 }

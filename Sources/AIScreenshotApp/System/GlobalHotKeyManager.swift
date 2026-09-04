@@ -8,9 +8,9 @@ enum GlobalHotKeyError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .eventHandler(let status):
-            "无法安装快捷键处理器（\(status)）"
+            "Failed to install the hotkey handler (\(status))"
         case .registration(let action, let status):
-            "“\(action.displayName)”快捷键已被系统或其他应用占用（\(status)）。"
+            "The “\(action.displayName)” shortcut is already in use by the system or another app (\(status))."
         }
     }
 }

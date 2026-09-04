@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>zh_CN</string>
     <key>CFBundleDisplayName</key>
-    <string>拓</string>
+    <string>Ta</string>
     <key>CFBundleExecutable</key>
     <string>AIScreenshotApp</string>
     <key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>拓</string>
+    <string>Ta</string>
     <key>CFBundleIconFile</key>
     <string>Ta</string>
     <key>CFBundlePackageType</key>
@@ -29,7 +29,7 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>「拓」需要读取你主动框选的屏幕区域，以完成截图和本地文字识别。</string>
+    <string>"Ta" needs to read the screen region you select, to capture and recognize text locally.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>

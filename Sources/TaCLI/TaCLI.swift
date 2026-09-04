@@ -32,7 +32,7 @@ struct TaCLI {
             write(rendered, to: destination)
             Darwin.exit(CLIExitCode.forResponse(response).rawValue)
         } catch is CancellationError {
-            write("CANCELLED: 请求已取消。", to: .standardError)
+            write("CANCELLED: The request was cancelled.", to: .standardError)
             Darwin.exit(CLIExitCode.cancelled.rawValue)
         } catch let error as TaAppLauncherError {
             write("TA_APP_NOT_INSTALLED: \(error.localizedDescription)", to: .standardError)

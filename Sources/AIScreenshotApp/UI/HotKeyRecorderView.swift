@@ -56,8 +56,8 @@ final class HotKeyRecorderButton: NSButton {
 
     func startRecording() {
         isRecording = true
-        title = "请按新快捷键…"
-        toolTip = "按 Escape 取消录制"
+        title = "Press a new shortcut…"
+        toolTip = "Press Escape to cancel"
         window?.makeFirstResponder(self)
     }
 
@@ -75,7 +75,7 @@ final class HotKeyRecorderButton: NSButton {
         guard let keyLabel = Self.keyLabel(for: event),
               !keyLabel.isEmpty else {
             NSSound.beep()
-            title = "无法识别这个按键"
+            title = "Key not recognized"
             return
         }
 
@@ -111,8 +111,8 @@ final class HotKeyRecorderButton: NSButton {
     }
 
     private func refreshTitle() {
-        title = shortcut?.displayText ?? "点击设置"
-        toolTip = "可设置单键或组合键；按 Escape 取消"
+        title = shortcut?.displayText ?? "Click to set"
+        toolTip = "Set a single key or key combination; press Escape to cancel"
     }
 
     private static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {

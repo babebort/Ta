@@ -29,7 +29,7 @@ enum TaAgentBridgeConnection {
                 requestID: "unknown",
                 error: AgentErrorPayload(
                     code: .invalidRequest,
-                    message: "无法解析 Bridge 请求：\(decodingError)",
+                    message: "Could not parse the Bridge request: \(decodingError)",
                     retryable: false
                 )
             )

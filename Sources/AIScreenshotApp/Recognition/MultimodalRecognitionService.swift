@@ -6,15 +6,15 @@ enum MultimodalRecognitionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .imageEncodingFailed: "无法为视觉模型编码截图。"
+        case .imageEncodingFailed: "Failed to encode the screenshot for the vision model."
         }
     }
 }
 
 enum GeneralVisionResponsePolicy {
-    static let recoveryPrompt = """
-        请重新查看图片本身。这是视觉理解任务，不是 OCR。请直接描述图中可见的主体、动物或人物、物体、场景、动作、颜色和构图。即使没有任何文字，也必须描述画面；不要只回答“没有文字”。
-        """
+    static let recoveryPrompt = “””
+        Please look at the image again. This is a visual-understanding task, not OCR. Directly describe the visible subject, any animals or people, objects, scene, action, colors, and composition. Even if there's no text at all, you must still describe the scene — do not just answer “no text.”
+        “””
 
     static func shouldRetry(_ response: String) -> Bool {
         let normalized = response
@@ -48,7 +48,7 @@ struct MultimodalRecognitionService {
     }
 
     var activeVisionModelName: String {
-        (try? profileStore.loadState().activeProfile?.visionModel) ?? "视觉模型"
+        (try? profileStore.loadState().activeProfile?.visionModel) ?? "Vision Model"
     }
 
     func recognize(image: CGImage, task: MultimodalTaskTemplate? = nil) async throws -> String {

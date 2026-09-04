@@ -10,11 +10,11 @@ enum ScreenCaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .displayUnavailable:
-            return "找不到对应的显示器，请重新选择。"
+            return "Could not find the matching display. Please select again."
         case .windowUnavailable:
-            return "找不到对应的窗口，请重新选择。"
+            return "Could not find the matching window. Please select again."
         case .invalidSelection:
-            return "选区无效，请重新框选。"
+            return "The selection is invalid. Please re-select the area."
         }
     }
 }

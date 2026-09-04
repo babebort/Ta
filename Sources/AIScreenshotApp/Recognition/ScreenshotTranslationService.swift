@@ -10,10 +10,10 @@ enum ScreenshotTranslationServiceError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .imageEncodingFailed: "无法为翻译模型编码截图。"
-        case .missingTextBoxes: "没有找到可靠的文字位置，无法生成翻译图片；可以改用“翻译文字并复制”。"
+        case .imageEncodingFailed: "Failed to encode the screenshot for the translation model."
+        case .missingTextBoxes: "No reliable text positions were found, so a translated image can't be generated; try “Translate Text and Copy” instead."
         case .localOCRUnavailableForImage:
-            "本地文字识别暂时无法定位图片中的文字，因此不能生成全文翻译图片。请重试，或在翻译设置中改用“翻译文字并复制”。"
+            "Local text recognition couldn't locate text in the image right now, so a full-image translation can't be generated. Please try again, or switch to “Translate Text and Copy” in the translation settings."
         }
     }
 }
@@ -38,7 +38,7 @@ struct ScreenshotTranslationService: @unchecked Sendable {
     }
 
     var selectedTextModelName: String {
-        (try? requiredProfile().textModel) ?? "文字模型"
+        (try? requiredProfile().textModel) ?? "Text Model"
     }
 
     func validateConfiguration() throws {
@@ -125,8 +125,8 @@ struct ScreenshotTranslationService: @unchecked Sendable {
             model: profile.visionModel,
             apiKey: key,
             imageData: data,
-            sourceLanguage: "英文",
-            targetLanguage: "简体中文",
+            sourceLanguage: "English",
+            targetLanguage: "Simplified Chinese",
             provider: profile.providerKind
         )
     }
@@ -144,11 +144,11 @@ struct ScreenshotTranslationService: @unchecked Sendable {
         }
         if state.translationProfile != nil {
             throw AIProviderProfileStoreError.translationIneligible(
-                "当前翻译模型缺少文字模型、视觉模型或 API Key，请到“AI 模型”中补全。"
+                "The current translation model is missing a text model, vision model, or API Key — please complete it in “AI Models”."
             )
         }
         throw AIProviderProfileStoreError.translationIneligible(
-            "请先到“AI 模型”配置一套带文字模型和视觉模型的服务，然后在翻译设置中选择它。"
+            "Please first configure a service with both a text model and a vision model in “AI Models”, then select it in translation settings."
         )
     }
 

@@ -23,7 +23,7 @@ struct AppLaunchPolicy: Equatable {
 final class AppModel: ObservableObject {
     static weak var current: AppModel?
 
-    @Published private(set) var statusText = "本地识别就绪"
+    @Published private(set) var statusText = "Ready for local recognition"
     @Published private(set) var isCapturing = false
 
     private let hotKeyManager = GlobalHotKeyManager()
@@ -57,7 +57,7 @@ final class AppModel: ObservableObject {
                 longCapture: { [weak self] in self?.startCapture(.long) }
             )
         } catch {
-            statusText = "快捷键注册失败"
+            statusText = "Failed to register shortcut"
         }
         hotKeyFailureObserver = NotificationCenter.default.addObserver(
             forName: HotKeyPreferences.registrationFailedNotification,
@@ -66,7 +66,7 @@ final class AppModel: ObservableObject {
         ) { [weak self] notification in
             let message = notification.userInfo?[HotKeyPreferences.errorMessageUserInfoKey] as? String
             Task { @MainActor in
-                self?.statusText = message ?? "快捷键冲突，已恢复上一组配置"
+                self?.statusText = message ?? "Shortcut conflict, restored the previous configuration"
             }
         }
 
@@ -84,7 +84,7 @@ final class AppModel: ObservableObject {
                 showWelcome()
                 try? await Task.sleep(for: .milliseconds(220))
                 captureCoordinator.openCaptureToolbarSmokeFixture { [weak self] in
-                    self?.statusText = "本地识别就绪"
+                    self?.statusText = "Ready for local recognition"
                 }
             }
         } else if arguments.contains("--ui-smoke-result-bar-success") {
@@ -108,7 +108,7 @@ final class AppModel: ObservableObject {
                 try? await Task.sleep(for: .milliseconds(180))
                 self?.captureCoordinator.openInlineEditorSmokeFixture { [weak self] in
                     self?.isCapturing = false
-                    self?.statusText = "本地识别就绪"
+                    self?.statusText = "Ready for local recognition"
                 }
             }
         } else if arguments.contains("--capture-intelligent") {
@@ -139,7 +139,7 @@ final class AppModel: ObservableObject {
             try server.start()
             agentBridgeServer = server
         } catch {
-            statusText = "Agent Bridge 启动失败"
+            statusText = "Agent Bridge failed to start"
         }
     }
 
@@ -170,12 +170,12 @@ final class AppModel: ObservableObject {
         NotificationCenter.default.post(name: .taMenuBarShouldClose, object: nil)
         isCapturing = true
         statusText = switch mode {
-        case .interactive: "框选后选择操作"
-        case .intelligent: "选择需要识别的区域"
-        case .translation: "选择需要翻译的区域"
-        case .image: "选择要复制的区域"
-        case .pin: "选择要钉住的区域"
-        case .long: "从起点框到滚动区域底部"
+        case .interactive: "Select an area, then choose an action"
+        case .intelligent: "Select the area to recognize"
+        case .translation: "Select the area to translate"
+        case .image: "Select the area to copy"
+        case .pin: "Select the area to pin"
+        case .long: "Select a starting point to capture to the bottom of the scroll area"
         }
 
         captureCoordinator.start(mode: mode) { [weak self] outcome in
@@ -183,7 +183,7 @@ final class AppModel: ObservableObject {
             isCapturing = false
             switch outcome {
             case .cancelled:
-                statusText = "本地识别就绪"
+                statusText = "Ready for local recognition"
             case .completed(let message):
                 statusText = message
             case .failed(let message):
@@ -193,26 +193,26 @@ final class AppModel: ObservableObject {
     }
 
     func pinClipboardContent() {
-        statusText = captureCoordinator.pinClipboardContent() ? "已从剪贴板生成钉图" : "剪贴板中没有可钉住的内容"
+        statusText = captureCoordinator.pinClipboardContent() ? "Pinned from clipboard" : "Nothing in the clipboard to pin"
     }
 
     func hideAllPins() {
         captureCoordinator.hideAllPins()
-        statusText = "已隐藏全部钉图"
+        statusText = "Hid all pinned images"
     }
 
     func showAllPins() {
         captureCoordinator.showAllPins()
-        statusText = "已显示全部钉图"
+        statusText = "Showed all pinned images"
     }
 
     func restorePinInteraction() {
         captureCoordinator.enableAllPinInteraction()
-        statusText = "已恢复钉图鼠标交互"
+        statusText = "Restored mouse interaction for pinned images"
     }
 
     func restoreLastClosedPin() {
-        statusText = captureCoordinator.restoreLastClosedPin() ? "已恢复最近关闭的钉图" : "没有可恢复的钉图"
+        statusText = captureCoordinator.restoreLastClosedPin() ? "Restored the most recently closed pin" : "No pin to restore"
     }
 
     private func scheduleLaunchCapture(_ mode: CaptureMode) {
@@ -233,7 +233,7 @@ final class AppModel: ObservableObject {
                 isCapturing = false
                 switch outcome {
                 case .cancelled:
-                    statusText = "本地识别就绪"
+                    statusText = "Ready for local recognition"
                 case .completed(let message):
                     statusText = message
                 case .failed(let message):

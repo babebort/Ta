@@ -2,10 +2,10 @@ import AppKit
 import SwiftUI
 
 enum TaBrand {
-    static let name = "拓"
+    static let name = "Ta"
     static let englishName = "Ta"
-    static let tagline = "把屏幕上的信息，拓下来。"
-    static let productDescription = "截图、识别、翻译与标注，一步完成"
+    static let tagline = "Capture what's on your screen."
+    static let productDescription = "Screenshot, recognize, translate, and annotate — all in one step"
 }
 
 enum TaPalette {

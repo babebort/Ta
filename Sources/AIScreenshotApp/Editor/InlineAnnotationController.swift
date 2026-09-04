@@ -143,13 +143,13 @@ final class InlineAnnotationController: NSObject {
         ]
         for (tool, symbol) in tools {
             let tooltip = switch tool {
-            case .mosaic: "框选马赛克：拖出矩形区域"
-            case .mosaicBrush: "涂抹马赛克：像画笔一样按住并连续涂抹"
+            case .mosaic: "Mosaic (select area): drag out a rectangle"
+            case .mosaicBrush: "Mosaic (brush): hold and paint like a brush"
             default: tool.displayName
             }
             let button = symbol.map {
                 iconButton(symbol: $0, tooltip: tooltip, action: #selector(selectTool(_:)))
-            } ?? textButton(title: "T", tooltip: "文字：点击截图后输入", action: #selector(selectTool(_:)))
+            } ?? textButton(title: "T", tooltip: "Text: click on the screenshot, then type", action: #selector(selectTool(_:)))
             button.tag = tool.rawValue
             button.setButtonType(.toggle)
             button.state = tool == .rectangle ? .on : .off
@@ -164,7 +164,7 @@ final class InlineAnnotationController: NSObject {
         color.color = .systemRed
         color.target = canvas
         color.action = #selector(AnnotationCanvasView.changeColor(_:))
-        color.toolTip = "颜色"
+        color.toolTip = "Color"
         color.widthAnchor.constraint(equalToConstant: 32).isActive = true
         color.heightAnchor.constraint(equalToConstant: 26).isActive = true
         stack.addArrangedSubview(color)
@@ -175,7 +175,7 @@ final class InlineAnnotationController: NSObject {
         parameterControl.heightAnchor.constraint(equalToConstant: 30).isActive = true
 
         let width = NSSlider(value: 5, minValue: 1, maxValue: 22, target: canvas, action: #selector(AnnotationCanvasView.changeWidth(_:)))
-        width.toolTip = "粗细（滚轮或 [ ] 调整）"
+        width.toolTip = "Width (scroll wheel or [ ] to adjust)"
         width.translatesAutoresizingMaskIntoConstraints = false
         parameterControl.addSubview(width)
 
@@ -187,7 +187,7 @@ final class InlineAnnotationController: NSObject {
         textSize.selectItem(withTag: Int(AnnotationTextMetrics.defaultSize))
         textSize.target = canvas
         textSize.action = #selector(AnnotationCanvasView.changeTextSize(_:))
-        textSize.toolTip = "字号（编辑时滚轮可调）"
+        textSize.toolTip = "Size (scroll wheel while editing)"
         textSize.isHidden = true
         textSize.translatesAutoresizingMaskIntoConstraints = false
         parameterControl.addSubview(textSize)
@@ -207,20 +207,20 @@ final class InlineAnnotationController: NSObject {
         canvas.onTextSizeChanged = { [weak textSize] value in textSize?.selectItem(withTag: Int(value)) }
 
         stack.addArrangedSubview(separator())
-        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.backward", tooltip: "撤销 ⌘Z", target: canvas, action: #selector(AnnotationCanvasView.undo(_:))))
-        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.forward", tooltip: "重做 ⇧⌘Z", target: canvas, action: #selector(AnnotationCanvasView.redo(_:))))
+        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.backward", tooltip: "Undo ⌘Z", target: canvas, action: #selector(AnnotationCanvasView.undo(_:))))
+        stack.addArrangedSubview(iconButton(symbol: "arrow.uturn.forward", tooltip: "Redo ⇧⌘Z", target: canvas, action: #selector(AnnotationCanvasView.redo(_:))))
 
         stack.addArrangedSubview(separator())
-        stack.addArrangedSubview(iconButton(symbol: "doc.on.doc", tooltip: "复制并结束", action: #selector(copyAndFinish)))
-        stack.addArrangedSubview(iconButton(symbol: "square.and.arrow.down", tooltip: "保存", action: #selector(saveAndFinish)))
-        stack.addArrangedSubview(iconButton(symbol: "pin.fill", tooltip: "钉在屏幕上", action: #selector(pinAndFinish)))
-        stack.addArrangedSubview(iconButton(symbol: "xmark", tooltip: "取消 Esc", action: #selector(cancel)))
+        stack.addArrangedSubview(iconButton(symbol: "doc.on.doc", tooltip: "Copy and finish", action: #selector(copyAndFinish)))
+        stack.addArrangedSubview(iconButton(symbol: "square.and.arrow.down", tooltip: "Save", action: #selector(saveAndFinish)))
+        stack.addArrangedSubview(iconButton(symbol: "pin.fill", tooltip: "Pin to screen", action: #selector(pinAndFinish)))
+        stack.addArrangedSubview(iconButton(symbol: "xmark", tooltip: "Cancel Esc", action: #selector(cancel)))
 
-        let done = NSButton(title: "完成", target: self, action: #selector(copyAndFinish))
+        let done = NSButton(title: "Done", target: self, action: #selector(copyAndFinish))
         done.bezelStyle = .rounded
         done.controlSize = .small
         done.keyEquivalent = "\r"
-        done.toolTip = "完成并复制"
+        done.toolTip = "Done and copy"
         stack.addArrangedSubview(done)
 
         let toolbar = NSVisualEffectView()
