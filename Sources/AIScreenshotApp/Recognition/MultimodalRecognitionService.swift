@@ -12,9 +12,9 @@ enum MultimodalRecognitionError: LocalizedError {
 }
 
 enum GeneralVisionResponsePolicy {
-    static let recoveryPrompt = “””
-        Please look at the image again. This is a visual-understanding task, not OCR. Directly describe the visible subject, any animals or people, objects, scene, action, colors, and composition. Even if there's no text at all, you must still describe the scene — do not just answer “no text.”
-        “””
+    static let recoveryPrompt = """
+        Please look at the image again. This is a visual-understanding task, not OCR. Directly describe the visible subject, any animals or people, objects, scene, action, colors, and composition. Even if there's no text at all, you must still describe the scene — do not just answer \"no text.\"
+        """
 
     static func shouldRetry(_ response: String) -> Bool {
         let normalized = response
@@ -94,7 +94,7 @@ struct MultimodalRecognitionService {
             model: profile.visionModel,
             apiKey: key,
             imageData: imageData,
-            prompt: "这是拓的连接测试图片。请只回复你在图片中看到的英文单词和数字，不要添加解释。"
+            prompt: "This is Ta's connection test image. Reply only with the English words and numbers you see in the image, with no explanation."
         )
     }
 
